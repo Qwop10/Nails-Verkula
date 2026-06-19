@@ -6,7 +6,7 @@ import React, { useEffect, useState } from 'react';
 import { useNav } from '../../hooks';
 import { hideMainButton, hideBackButton, selectionHaptic } from '../../services';
 import { CLIENT_ROUTES } from '../../routes';
-import { useNotification, useBookingStore } from '../../store';
+import { useBookingStore, useAppStore } from '../../store';
 import { BRAND } from '../../config/brand';
 import { Button } from '../../components/ui';
 import { FloralDecor } from '../../components/FloralDecor';
@@ -26,17 +26,18 @@ function formatPhone(value: string): string {
   return out;
 }
 
-const PROCESS = [
-  'Выберите услуги и удобное время',
-  'Мастер рассмотрит заявку и подтвердит',
-  'Бронь оплачивается онлайн после одобрения',
-];
-
 export const ClientHome: React.FC = () => {
   const { navigate } = useNav();
-  const notify = useNotification();
   const { clientName, clientPhone, setClient } = useBookingStore();
-  const [name, setName] = useState(clientName);
+  const telegramUser = useAppStore((s) => s.telegramUser);
+
+  // Имя — автозаполняется из Telegram, если клиент ещё не вводил.
+  const tgFullName = telegramUser
+    ? [telegramUser.first_name, telegramUser.last_name].filter(Boolean).join(' ')
+    : '';
+  const tgUsername = telegramUser?.username ? '@' + telegramUser.username : '';
+
+  const [name, setName] = useState(clientName || tgFullName);
   const [phone, setPhone] = useState(clientPhone);
 
   useEffect(() => {
@@ -44,16 +45,17 @@ export const ClientHome: React.FC = () => {
     hideMainButton();
   }, []);
 
+  // Подставить имя из Telegram, когда данные подгрузятся (если поле ещё пустое).
+  useEffect(() => {
+    if (!name && tgFullName) setName(tgFullName);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tgFullName]);
+
+  const phoneDigits = phone.replace(/\D/g, '');
+  const isValid = name.trim().length >= 2 && phoneDigits.length === 11;
+
   const handleContinue = () => {
-    if (name.trim().length < 2) {
-      notify.error('Укажите имя и фамилию');
-      return;
-    }
-    const digits = phone.replace(/\D/g, '');
-    if (digits.length < 10) {
-      notify.error('Укажите корректный номер телефона');
-      return;
-    }
+    if (!isValid) return;
     selectionHaptic();
     setClient(name.trim(), phone.trim());
     navigate(CLIENT_ROUTES.CATALOG);
@@ -65,33 +67,34 @@ export const ClientHome: React.FC = () => {
   return (
     <div className="flex-1 flex flex-col justify-center relative overflow-hidden">
       <FloralDecor />
-      {/* Логотип / заголовок */}
+      {/* Заголовок */}
       <div className="text-center pt-2">
-        <h1 className="font-serif text-2xl text-fg">{BRAND.name}</h1>
-        <p className="text-sm text-muted italic mt-0.5">{BRAND.tagline}</p>
+        <h1 className="font-serif text-2xl text-fg">Добро пожаловать</h1>
+        <p className="text-sm text-muted italic mt-0.5">{BRAND.name}</p>
       </div>
 
-      {/* Процесс */}
-      <div className="mt-6 rounded-card bg-card border border-line p-4">
-        {PROCESS.map((t, i) => (
-          <div key={i} className="flex items-start gap-3 py-1.5">
-            <span className="shrink-0 w-6 h-6 rounded-full bg-brand/15 text-brand text-xs flex items-center justify-center font-medium">
-              {i + 1}
-            </span>
-            <p className="text-sm text-fg pt-0.5">{t}</p>
-          </div>
-        ))}
-      </div>
-
-      {/* Форма */}
-      <div className="mt-5 flex flex-col gap-3">
+      {/* Форма — все поля обязательны */}
+      <div className="mt-6 flex flex-col gap-3">
         <input
           className={inputCls}
           placeholder="Имя и фамилия"
           value={name}
           onChange={(e) => setName(e.target.value)}
           autoComplete="name"
+          maxLength={40}
         />
+        {/* @username — заполняется автоматически из Telegram, только для чтения */}
+        <div className="relative">
+          <input
+            className={`${inputCls} ${tgUsername ? 'text-muted' : ''} pr-10`}
+            placeholder="@username — заполняется автоматически"
+            value={tgUsername}
+            readOnly
+          />
+          {tgUsername && (
+            <span className="absolute right-4 top-1/2 -translate-y-1/2 text-brand">✓</span>
+          )}
+        </div>
         <input
           className={inputCls}
           placeholder="+7 (000) 000-00-00"
@@ -103,15 +106,21 @@ export const ClientHome: React.FC = () => {
       </div>
 
       {/* Заметка про бронь */}
-      <div className="mt-4 rounded-card bg-card border border-brand/50 px-4 py-3">
+      <div className="mt-4 flex items-center gap-2 px-1">
+        <span className="text-brand text-sm">ⓘ</span>
         <p className="text-xs text-brand-dark leading-relaxed">
-          При записи взимается бронь {BRAND.booking.fee} ₽ — входит в стоимость процедуры.
-          Возврат при отмене не позднее чем за {BRAND.booking.refundHours} ч.
+          Для всех клиентов при записи взимается бронь {BRAND.booking.fee} ₽
         </p>
       </div>
 
       <div className="mt-6">
-        <Button variant="primary" size="lg" fullWidth onClick={handleContinue}>
+        <Button
+          variant="primary"
+          size="lg"
+          fullWidth
+          disabled={!isValid}
+          onClick={handleContinue}
+        >
           Продолжить →
         </Button>
       </div>
