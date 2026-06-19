@@ -45,6 +45,8 @@ export async function initSchema() {
   `);
   await pool.query(`CREATE INDEX IF NOT EXISTS idx_requests_client ON requests(client_id);`);
   await pool.query(`CREATE INDEX IF NOT EXISTS idx_requests_status ON requests(status);`);
+  // Флаг отправленного напоминания (за 24 часа до записи).
+  await pool.query(`ALTER TABLE requests ADD COLUMN IF NOT EXISTS reminded BOOLEAN NOT NULL DEFAULT false;`);
 
   // Расписание мастера: один ряд на день недели.
   await pool.query(`
@@ -117,6 +119,19 @@ export async function getClient(id) {
   const { rows } = await pool.query(`SELECT id, name, phone FROM clients WHERE id = $1`, [String(id)]);
   const r = rows[0];
   return r ? { id: r.id, name: r.name || '', phone: r.phone || '' } : null;
+}
+
+// ── Напоминания ───────────────────────────────────────────────
+/** Подтверждённые записи, которым ещё не слали напоминание. */
+export async function getConfirmedUnreminded() {
+  const { rows } = await pool.query(
+    `SELECT * FROM requests WHERE status = 'confirmed' AND reminded = false AND req_date IS NOT NULL`
+  );
+  return rows.map(rowToRequest);
+}
+
+export async function markReminded(id) {
+  await pool.query(`UPDATE requests SET reminded = true WHERE id = $1`, [id]);
 }
 
 // ── Расписание ────────────────────────────────────────────────

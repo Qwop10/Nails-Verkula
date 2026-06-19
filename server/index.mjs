@@ -398,6 +398,28 @@ app.post('/api/tg/webhook', (req, res) => {
   }
 });
 
+// ============================ REMINDERS ============================
+// Раз в 15 минут шлём напоминание клиентам, у кого запись в ближайшие 24 часа.
+async function runReminders() {
+  try {
+    const rows = await db.getConfirmedUnreminded();
+    const now = Date.now();
+    for (const r of rows) {
+      const appt = new Date(`${r.date}T${r.time || '00:00'}:00`).getTime();
+      const hoursLeft = (appt - now) / 3_600_000;
+      if (hoursLeft > 0 && hoursLeft <= 24) {
+        const okSent = await sendMessage(
+          r.clientId,
+          `🔔 <b>Напоминание о записи</b>\n🗓 ${prettyDate(r.date)} · ${r.time} · ${labelsOf(r)}\nЖдём вас в Nails Verkula 💅`
+        );
+        if (okSent) await db.markReminded(r.id);
+      }
+    }
+  } catch (e) {
+    console.warn('[reminders] error:', e.message);
+  }
+}
+
 // ============================ STATIC ============================
 app.use('/uploads', express.static(getStorageDir(), { maxAge: '365d', immutable: true }));
 app.use(express.static(DIST));
@@ -409,6 +431,9 @@ Promise.all([db.initSchema(), initStorage()])
     app.listen(PORT, '0.0.0.0', () => {
       console.log(`Server listening on 0.0.0.0:${PORT} (bot: ${hasBotToken()}, payments: ${PAYMENTS_ENABLED})`);
       setWebhook();
+      // Планировщик напоминаний: сразу и далее каждые 15 минут.
+      runReminders();
+      setInterval(runReminders, 15 * 60 * 1000);
     });
   })
   .catch((e) => {
