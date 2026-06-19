@@ -41,6 +41,14 @@ export function getService(id: string): NailService | undefined {
   return NAIL_SERVICES.find((s) => s.id === id);
 }
 
+/** Короткое название услуги (как в прошлом дизайне). */
+export function shortLabel(label: string): string {
+  return label
+    .replace('Комбинированный маникюр', 'Комб. маникюр')
+    .replace('Гелевое покрытие с укреплением', 'Гел. покрытие с укреп.')
+    .replace('Наращивание', 'Наращ.');
+}
+
 /** Сумма выбранных услуг (main id + список addon id). */
 export function calcTotal(mainId: string | null, addonIds: string[]): number {
   let sum = 0;

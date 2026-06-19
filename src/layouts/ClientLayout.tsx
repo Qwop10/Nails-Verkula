@@ -8,7 +8,7 @@ import React, { useEffect } from 'react';
 import type { ReactNode } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { getStepFromPath } from '../routes';
-import { useFormStore } from '../store';
+import { useFormStore, useBookingStore, useNotification } from '../store';
 import { getBackgroundProps, isAuroraBackground, hasGrain } from '../config/theme.config';
 import { AuroraBackground } from '../components/AuroraBackground';
 import { GrainOverlay } from '../components/GrainOverlay';
@@ -29,6 +29,11 @@ export const ClientLayout: React.FC<ClientLayoutProps> = ({ children }) => {
   const { pathname } = useLocation();
   const navigate = useNavigate();
   const setCurrentStep = useFormStore((s) => s.setCurrentStep);
+  const clientName = useBookingStore((s) => s.clientName);
+  const clientPhone = useBookingStore((s) => s.clientPhone);
+  const verified =
+    clientName.trim().length >= 2 && clientPhone.replace(/\D/g, '').length === 11;
+  const notify = useNotification();
 
   useEffect(() => {
     const step = getStepFromPath(pathname);
@@ -61,16 +66,37 @@ export const ClientLayout: React.FC<ClientLayoutProps> = ({ children }) => {
           <div className="max-w-md mx-auto flex">
             {TABS.map((tab) => {
               const active = pathname === tab.path;
-              const color = active ? 'rgb(var(--brand))' : 'rgb(var(--muted))';
+              // Вкладки кроме «Главная» заблокированы, пока клиент не заполнил данные.
+              const locked = tab.path !== '/' && !verified;
+              const color = active
+                ? 'rgb(var(--brand))'
+                : locked
+                ? 'rgb(var(--hint))'
+                : 'rgb(var(--muted))';
+              const handleClick = () => {
+                if (locked) {
+                  notify.error('Сначала заполните данные на главной');
+                  return;
+                }
+                navigate(tab.path);
+              };
               return (
                 <button
                   key={tab.path}
-                  onClick={() => navigate(tab.path)}
-                  className="flex-1 flex flex-col items-center gap-1 py-3"
-                  style={{ color }}
+                  onClick={handleClick}
+                  className="relative flex-1 flex flex-col items-center gap-1 py-3 transition-colors"
+                  style={{ color, opacity: locked ? 0.5 : 1 }}
                 >
-                  <Icon name={tab.icon} size={24} strokeWidth={1.8} />
+                  <span style={active ? { filter: 'drop-shadow(0 0 4px rgba(201,168,76,.55))' } : undefined}>
+                    <Icon name={tab.icon} size={24} strokeWidth={1.8} />
+                  </span>
                   <span className="text-xs font-medium">{tab.label}</span>
+                  {active && (
+                    <span
+                      className="absolute left-1/2 -translate-x-1/2"
+                      style={{ bottom: 8, width: 18, height: 2, borderRadius: 2, background: 'rgb(var(--brand))', opacity: 0.7 }}
+                    />
+                  )}
                 </button>
               );
             })}

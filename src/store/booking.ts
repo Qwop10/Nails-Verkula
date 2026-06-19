@@ -21,6 +21,8 @@ interface BookingState {
   setClient: (name: string, phone: string) => void;
   setMain: (id: string | null) => void;
   toggleAddon: (id: string) => void;
+  setAddonSingle: (id: string) => void;
+  isVerified: () => boolean;
   setWishes: (w: string) => void;
   setDate: (d: string | null) => void;
   setTime: (t: string | null) => void;
@@ -53,6 +55,15 @@ export const useBookingStore = create<BookingState>((set, get) => ({
         ? s.addonIds.filter((x) => x !== id)
         : [...s.addonIds, id],
     })),
+
+  // Одиночный выбор доп. услуги: повторный клик снимает, иначе заменяет выбор.
+  setAddonSingle: (id) =>
+    set((s) => ({ addonIds: s.addonIds[0] === id ? [] : [id] })),
+
+  isVerified: () => {
+    const { clientName, clientPhone } = get();
+    return clientName.trim().length >= 2 && clientPhone.replace(/\D/g, '').length === 11;
+  },
 
   setWishes: (wishes) => set({ wishes }),
   setDate: (date) => set({ date, time: null }), // смена даты сбрасывает время

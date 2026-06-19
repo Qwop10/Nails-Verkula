@@ -12,6 +12,8 @@ import {
   MAIN_SERVICES,
   ADDON_SERVICES,
   AUTO_SERVICES,
+  getService,
+  shortLabel,
   type NailService,
 } from '../../config/services.config';
 
@@ -20,8 +22,17 @@ const fmt = (n: number) => `${n.toLocaleString('ru-RU')} ₽`;
 export const NailsCatalog: React.FC = () => {
   const { navigate } = useNav();
   const notify = useNotification();
-  const { mainId, addonIds, wishes, setMain, toggleAddon, setWishes, total, hasSelection } =
+  const { mainId, addonIds, wishes, setMain, setAddonSingle, setWishes, total, hasSelection } =
     useBookingStore();
+
+  // Сводка выбора: «Комб. маникюр + Дизайн — 1 800 ₽»
+  const mainSvc = mainId ? getService(mainId) : null;
+  const addonSvc = addonIds[0] ? getService(addonIds[0]) : null;
+  const summaryParts = [
+    mainSvc ? shortLabel(mainSvc.label) : null,
+    addonSvc ? addonSvc.label : null,
+  ].filter(Boolean);
+  const summaryText = summaryParts.join(' + ');
 
   useEffect(() => {
     hideMainButton();
@@ -38,7 +49,7 @@ export const NailsCatalog: React.FC = () => {
 
   const Row = ({ s, selected }: { s: NailService; selected: boolean }) => (
     <button
-      onClick={() => (s.kind === 'main' ? setMain(s.id) : toggleAddon(s.id))}
+      onClick={() => (s.kind === 'main' ? setMain(s.id) : setAddonSingle(s.id))}
       className={`w-full text-left flex items-center gap-3 rounded-card border px-4 py-3 mb-2 transition-colors ${
         selected ? 'border-brand bg-brand/5' : 'border-line bg-card hover:bg-card-2'
       }`}
@@ -74,17 +85,17 @@ export const NailsCatalog: React.FC = () => {
   return (
     <div className="flex-1 flex flex-col">
       <h1 className="font-serif text-xl text-fg">Выберите услугу</h1>
-      <p className="text-sm text-muted mb-4">Основная и/или дополнительные услуги</p>
+      <p className="text-sm text-muted mb-4">до 2: 1 основная + 1 дополнительная</p>
 
       <p className="text-[11px] uppercase tracking-wider text-muted mb-2">
-        Основные — выберите одну
+        Основные — выберите 1
       </p>
       {MAIN_SERVICES.map((s) => (
         <Row key={s.id} s={s} selected={mainId === s.id} />
       ))}
 
       <p className="text-[11px] uppercase tracking-wider text-muted mb-2 mt-3">
-        Дополнительно — можно несколько
+        Дополнительно — выберите 1
       </p>
       {ADDON_SERVICES.map((s) => (
         <Row key={s.id} s={s} selected={addonIds.includes(s.id)} />
@@ -99,6 +110,13 @@ export const NailsCatalog: React.FC = () => {
           <span className="text-xs text-hint italic">{s.note}</span>
         </div>
       ))}
+
+      {summaryText && (
+        <div className="mt-4 flex items-center justify-between rounded-card border border-brand/50 bg-brand/5 px-4 py-2.5">
+          <span className="text-sm text-fg">{summaryText}</span>
+          <span className="text-sm font-medium text-brand whitespace-nowrap">{fmt(total())}</span>
+        </div>
+      )}
 
       <p className="text-[11px] uppercase tracking-wider text-muted mb-2 mt-3">Пожелания</p>
       <textarea
