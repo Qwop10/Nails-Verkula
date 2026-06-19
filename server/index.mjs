@@ -47,8 +47,13 @@ async function notifyConfirmed(r) {
       `\nБронь оплачена: ${fmtRu(r.bookingFee)} · Остаток на месте: ${fmtRu(r.total - r.bookingFee)}` +
       `${address}\n\nНапоминание придёт за 24 часа. Спасибо!`
   );
-  await sendMessage(r.clientId, MEMO_TEXT);
-  await sendMessage(r.clientId, CONTRA_TEXT);
+  // Памятка и противопоказания — картинками (с текстовым фолбэком).
+  if (!(await sendPhoto(r.clientId, `${APP_URL}/photo/memo.jpg`, '📋 Памятка клиенту'))) {
+    await sendMessage(r.clientId, MEMO_TEXT);
+  }
+  if (!(await sendPhoto(r.clientId, `${APP_URL}/photo/contraindications.jpg`, '⚠️ Основания для отказа в процедуре'))) {
+    await sendMessage(r.clientId, CONTRA_TEXT);
+  }
 }
 
 // ---- Health ----

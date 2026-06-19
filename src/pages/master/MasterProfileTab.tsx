@@ -14,7 +14,6 @@ import {
 const ROWS: { key: keyof MasterSettings; label: string }[] = [
   { key: 'notifications', label: 'Уведомления о заявках' },
   { key: 'reminders', label: 'Напоминания клиентам' },
-  { key: 'autoApprove', label: 'Автоодобрение' },
 ];
 
 export const MasterProfileTab: React.FC = () => {
