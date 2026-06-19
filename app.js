@@ -24,30 +24,90 @@ function initPhoneMask() {
   });
 }
 
-// ── Admin schedule ────────────────────────────────────────────
-function toggleSlot(el) {
-  if (el.classList.contains('slot-on')) {
-    el.classList.replace('slot-on', 'slot-off');
-  } else {
-    el.classList.replace('slot-off', 'slot-on');
-  }
+// ── Admin schedule (по дням) ──────────────────────────────────
+const DAY_NAMES_FULL = { 'Пн':'Понедельник','Вт':'Вторник','Ср':'Среда','Чт':'Четверг','Пт':'Пятница','Сб':'Суббота','Вс':'Воскресенье' };
+
+const schedData = {
+  'Пн': { active: true,  slots: ['10:00','12:00'] },
+  'Вт': { active: true,  slots: ['10:00','12:00'] },
+  'Ср': { active: true,  slots: ['10:00','12:00'] },
+  'Чт': { active: true,  slots: ['10:00','12:00'] },
+  'Пт': { active: true,  slots: ['10:00','12:00'] },
+  'Сб': { active: false, slots: [] },
+  'Вс': { active: false, slots: [] },
+};
+let schedCurrentDay = 'Пн';
+
+function schedSelectDay(day, el) {
+  schedCurrentDay = day;
+  document.querySelectorAll('#sched-day-tabs .sched-day-tab').forEach(t => t.classList.remove('on'));
+  el.classList.add('on');
+  schedRender();
 }
 
-const SLOT_TIMES = ['08:00','09:00','09:30','10:00','10:30','11:00','11:30','12:00','13:00','14:00','14:30','15:00','15:30','16:00','17:00','18:00','19:00','20:00'];
-let addSlotIdx = 0;
+function schedRender() {
+  const day = schedData[schedCurrentDay];
+  const toggle = document.getElementById('sched-day-toggle');
+  const label  = document.getElementById('sched-day-label');
+  const cont   = document.getElementById('sched-slots');
+  if (!toggle || !label || !cont) return;
 
-function addSlot() {
-  const container = document.getElementById('admin-slots');
-  const addBtn = container.querySelector('[onclick="addSlot()"]');
-  // Find next time not already shown
-  const shown = Array.from(container.querySelectorAll('.slot')).map(s => s.textContent.trim());
-  const next = SLOT_TIMES.find(t => !shown.includes(t));
-  if (!next) return;
-  const el = document.createElement('div');
-  el.className = 'slot slot-on';
-  el.textContent = next;
-  el.onclick = () => toggleSlot(el);
-  container.insertBefore(el, addBtn);
+  const fullName = DAY_NAMES_FULL[schedCurrentDay];
+  label.textContent = fullName + (day.active ? ' — рабочий день' : ' — выходной');
+  toggle.classList.toggle('on', day.active);
+
+  cont.innerHTML = '';
+  day.slots.forEach((t, i) => {
+    const el = document.createElement('div');
+    el.className = 'slot slot-on';
+    el.innerHTML = t + '<span style="margin-left:4px;opacity:.55;font-size:10px;cursor:pointer" onclick="schedRemoveSlot(' + i + ')">✕</span>';
+    cont.appendChild(el);
+  });
+
+  schedCancelAdd();
+}
+
+function schedToggleDay() {
+  const day = schedData[schedCurrentDay];
+  day.active = !day.active;
+  // Обновляем вкладку дня
+  document.querySelectorAll('#sched-day-tabs .sched-day-tab').forEach(el => {
+    if (el.textContent.trim().startsWith(schedCurrentDay)) {
+      el.classList.toggle('off', !day.active);
+    }
+  });
+  schedRender();
+}
+
+function schedShowAdd() {
+  document.getElementById('sched-add-form').style.display = 'flex';
+  document.getElementById('sched-add-btn').style.display  = 'none';
+  document.getElementById('sched-time-inp').focus();
+}
+
+function schedCancelAdd() {
+  const form = document.getElementById('sched-add-form');
+  const btn  = document.getElementById('sched-add-btn');
+  if (form) form.style.display = 'none';
+  if (btn)  btn.style.display  = '';
+}
+
+function schedConfirmAdd() {
+  const inp = document.getElementById('sched-time-inp');
+  const val = inp ? inp.value : '';
+  if (!val) return;
+  const day = schedData[schedCurrentDay];
+  if (!day.slots.includes(val)) {
+    day.slots.push(val);
+    day.slots.sort(); // HH:MM сортируется лексически = хронологически
+  }
+  if (inp) inp.value = '';
+  schedRender();
+}
+
+function schedRemoveSlot(idx) {
+  schedData[schedCurrentDay].slots.splice(idx, 1);
+  schedRender();
 }
 
 // ── Viewport lock (предотвращает прыжки при открытии клавиатуры) ──
@@ -102,6 +162,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
   renderCal();
   initPhoneMask();
+  schedRender();
 });
 
 function updateProfileUI(name, username) {

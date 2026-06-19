@@ -463,25 +463,31 @@
         </div>
         <button class="btn btn-dark btn-sm">✓ Одобрить и отправить на оплату</button>
       </div>
-      <div class="st">Расписание <span style="font-weight:400;text-transform:none;letter-spacing:0;font-size:10px;color:#c4a870">— нажмите чтобы вкл/выкл</span></div>
-      <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px" id="admin-slots">
-        <div class="slot slot-on" onclick="toggleSlot(this)">10:00</div>
-        <div class="slot slot-on" onclick="toggleSlot(this)">12:00</div>
-        <div class="slot slot-off" onclick="toggleSlot(this)">14:00</div>
-        <div class="slot slot-off" onclick="toggleSlot(this)">15:30</div>
-        <div class="slot slot-off" onclick="toggleSlot(this)">17:00</div>
-        <div class="slot slot-off" onclick="addSlot()" style="border-style:dashed">+ слот</div>
+      <div class="st">Расписание по дням</div>
+      <!-- Дни недели -->
+      <div id="sched-day-tabs" style="display:flex;gap:5px;margin-bottom:10px;flex-wrap:nowrap">
+        <div class="sched-day-tab on" onclick="schedSelectDay('Пн',this)">Пн</div>
+        <div class="sched-day-tab" onclick="schedSelectDay('Вт',this)">Вт</div>
+        <div class="sched-day-tab" onclick="schedSelectDay('Ср',this)">Ср</div>
+        <div class="sched-day-tab" onclick="schedSelectDay('Чт',this)">Чт</div>
+        <div class="sched-day-tab" onclick="schedSelectDay('Пт',this)">Пт</div>
+        <div class="sched-day-tab off" onclick="schedSelectDay('Сб',this)">Сб</div>
+        <div class="sched-day-tab off" onclick="schedSelectDay('Вс',this)">Вс</div>
       </div>
-      <div class="st">Рабочие дни <span style="font-weight:400;text-transform:none;letter-spacing:0;font-size:10px;color:#c4a870">— нажмите чтобы вкл/выкл</span></div>
-      <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:20px" id="admin-days">
-        <div class="slot slot-on" onclick="toggleSlot(this)">Пн</div>
-        <div class="slot slot-on" onclick="toggleSlot(this)">Вт</div>
-        <div class="slot slot-on" onclick="toggleSlot(this)">Ср</div>
-        <div class="slot slot-on" onclick="toggleSlot(this)">Чт</div>
-        <div class="slot slot-on" onclick="toggleSlot(this)">Пт</div>
-        <div class="slot slot-off" onclick="toggleSlot(this)">Сб</div>
-        <div class="slot slot-off" onclick="toggleSlot(this)">Вс</div>
+      <!-- Статус дня -->
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 12px;background:#fdf8ee;border:.5px solid #f0d888;border-radius:10px;margin-bottom:10px">
+        <span id="sched-day-label" style="font-size:12px;color:#1a1208;font-weight:500">Понедельник — рабочий день</span>
+        <div class="svc-toggle on" id="sched-day-toggle" onclick="schedToggleDay()"></div>
       </div>
+      <!-- Слоты выбранного дня -->
+      <div id="sched-slots" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px"></div>
+      <!-- Форма добавления времени -->
+      <div id="sched-add-form" style="display:none;align-items:center;gap:8px;margin-bottom:6px">
+        <input type="time" id="sched-time-inp" style="border:.5px solid #c9a84c;border-radius:8px;padding:6px 10px;font-size:13px;color:#1a1208;background:#fdf8ee;font-family:'Inter',sans-serif">
+        <button onclick="schedConfirmAdd()" style="background:#c9a84c;color:#fff;border:none;border-radius:8px;padding:6px 12px;font-size:12px;cursor:pointer;font-family:'Inter',sans-serif">Добавить</button>
+        <button onclick="schedCancelAdd()" style="background:none;border:.5px solid #d4b878;border-radius:8px;padding:6px 12px;font-size:12px;color:#b09050;cursor:pointer;font-family:'Inter',sans-serif">Отмена</button>
+      </div>
+      <div class="slot slot-off" onclick="schedShowAdd()" id="sched-add-btn" style="border-style:dashed;margin-bottom:20px">+ добавить время</div>
     </div>
   </div>
 
@@ -586,10 +592,10 @@
   <!-- ── ВКЛАДКА: ОТЧЁТ ── -->
   <div class="admin-tab-content" id="tab-report">
     <div class="period-bar">
-      <button class="period-btn" onclick="setPeriod(this,'day')">День</button>
-      <button class="period-btn on" onclick="setPeriod(this,'week')">Неделя</button>
+      <button class="period-btn on" onclick="setPeriod(this,'year')">Год</button>
       <button class="period-btn" onclick="setPeriod(this,'month')">Месяц</button>
-      <button class="period-btn" onclick="setPeriod(this,'year')">Год</button>
+      <button class="period-btn" onclick="setPeriod(this,'week')">Неделя</button>
+      <button class="period-btn" onclick="setPeriod(this,'day')">День</button>
     </div>
     <div class="sc">
       <div style="display:flex;gap:8px;margin-bottom:14px;margin-top:4px">

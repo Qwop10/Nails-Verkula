@@ -54,9 +54,12 @@ html,body{
 
 /* Bottom nav */
 .bn{background:#fdf8ee;border-top:.5px solid #f0d888;display:flex;height:64px;flex-shrink:0;padding-bottom:env(safe-area-inset-bottom)}
-.ni{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;font-size:10px;color:#d4b878;border:none;background:none;cursor:pointer;font-family:'Inter',sans-serif;padding:0;transition:.15s}
+.ni{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;font-size:10px;color:#d4b878;border:none;background:none;cursor:pointer;font-family:'Inter',sans-serif;padding:0;transition:.15s;position:relative}
 .ni.on{color:#c9a84c}
 .ni svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
+/* Подсветка активной вкладки */
+.ni.on svg{filter:drop-shadow(0 0 4px rgba(201,168,76,.55))}
+.ni.on::after{content:'';position:absolute;bottom:10px;left:50%;transform:translateX(-50%);width:18px;height:2px;background:#c9a84c;border-radius:2px;opacity:.7}
 
 /* Section title */
 .st{font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:#b09050;margin-bottom:8px;margin-top:12px}
@@ -116,6 +119,11 @@ html,body{
 .modal-overlay.open .modal-full{transform:translateY(0)}
 .modal-handle{width:36px;height:4px;background:#c9a84c;border-radius:2px;margin:0 auto 16px}
 .modal-warn{background:#fdf8ee;border:.5px solid #c9a84c;border-radius:10px;padding:10px 14px;margin-bottom:12px;font-size:12px;color:#8a6418;line-height:1.6}
+
+/* Schedule day tabs */
+.sched-day-tab{flex:1;text-align:center;padding:7px 2px;border-radius:8px;font-size:12px;font-weight:500;cursor:pointer;border:.5px solid #f0d888;background:#fdf8ee;color:#b09050;transition:.15s;user-select:none}
+.sched-day-tab.on{background:#c9a84c;color:#fff;border-color:#c9a84c}
+.sched-day-tab.off{background:#f5f0e8;color:#d4b878;border-color:#f0e8d0}
 
 /* Admin service picker (inside edit modal) */
 .svc-picker{display:none;flex-direction:column;gap:4px;margin-top:6px;margin-bottom:4px;padding:6px;background:#fdf8ee;border-radius:10px;border:.5px solid #f0d888}
