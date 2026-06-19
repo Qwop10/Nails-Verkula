@@ -149,12 +149,16 @@ export async function getReport(period: ReportPeriod): Promise<{
   await delay(150);
   void period;
   // Реальная статистика появится с серверным эндпоинтом отчётов.
-  // Пока показываем нули, без выдуманных данных.
+  // Пока показываем нули — без выдуманных данных, но со списком услуг.
   return {
     revenue: 0,
     visits: 0,
     avg: 0,
-    popular: [],
+    popular: [
+      { label: 'Комбинированный маникюр', count: 0 },
+      { label: 'Гелевое покрытие', count: 0 },
+      { label: 'Наращивание', count: 0 },
+    ],
   };
 }
 

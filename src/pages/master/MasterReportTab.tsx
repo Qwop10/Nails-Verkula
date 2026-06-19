@@ -52,9 +52,12 @@ export const MasterReportTab: React.FC = () => {
       <div className="rounded-card bg-card border border-line divide-y divide-line">
         {isLoading && <div className="px-4 py-3 text-xs text-hint">Загрузка…</div>}
         {(data?.popular ?? []).map((p) => (
-          <div key={p.label} className="flex justify-between items-center px-4 py-2.5">
+          <div key={p.label} className="flex justify-between items-center px-4 py-3">
             <span className="text-sm text-fg">{p.label}</span>
-            <span className="text-sm font-medium text-brand">{p.count}</span>
+            <div className="text-right">
+              <div className="text-sm font-medium text-brand leading-none">{p.count || '—'}</div>
+              <div className="text-[10px] text-muted mt-1">записей</div>
+            </div>
           </div>
         ))}
       </div>

@@ -49,13 +49,23 @@ export const MasterDashboard: React.FC = () => {
             <button
               key={t.key}
               onClick={() => setTab(t.key)}
-              className="flex-1 flex flex-col items-center gap-1 py-2.5"
+              className="relative flex-1 flex flex-col items-center gap-1 py-2.5 transition-colors"
               style={{ color }}
             >
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+              <svg
+                width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"
+                style={active ? { filter: 'drop-shadow(0 0 4px rgba(201,168,76,.55))' } : undefined}
+              >
                 {t.icon}
               </svg>
               <span className="text-[11px] font-medium">{t.label}</span>
+              {active && (
+                <span
+                  className="absolute left-1/2 -translate-x-1/2"
+                  style={{ bottom: 6, width: 18, height: 2, borderRadius: 2, background: 'rgb(var(--brand))', opacity: 0.7 }}
+                />
+              )}
             </button>
           );
         })}
