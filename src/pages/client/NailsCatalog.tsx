@@ -111,13 +111,6 @@ export const NailsCatalog: React.FC = () => {
         </div>
       ))}
 
-      {summaryText && (
-        <div className="mt-4 flex items-center justify-between rounded-card border border-brand/50 bg-brand/5 px-4 py-2.5">
-          <span className="text-sm text-fg">{summaryText}</span>
-          <span className="text-sm font-medium text-brand whitespace-nowrap">{fmt(total())}</span>
-        </div>
-      )}
-
       <p className="text-[11px] uppercase tracking-wider text-muted mb-2 mt-3">Пожелания</p>
       <textarea
         className="w-full bg-card border border-line rounded-card px-4 py-3 text-sm text-fg placeholder-hint outline-none focus:border-brand transition-colors resize-none"
@@ -126,6 +119,13 @@ export const NailsCatalog: React.FC = () => {
         value={wishes}
         onChange={(e) => setWishes(e.target.value)}
       />
+
+      {summaryText && (
+        <div className="mt-3 flex items-center justify-between">
+          <span className="text-sm text-brand-dark">{summaryText}</span>
+          <span className="text-sm font-medium text-brand whitespace-nowrap">{fmt(total())}</span>
+        </div>
+      )}
 
       <div className="mt-5 flex items-center justify-between">
         <span className="text-sm text-muted">Итого</span>
