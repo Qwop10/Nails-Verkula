@@ -37,14 +37,14 @@
     <div style="font-size:12px;color:#b09050;margin-bottom:20px;font-style:italic">Nails Verkula</div>
 
     <div style="width:100%;display:flex;flex-direction:column;gap:10px">
-      <input class="inp" id="inp-name" placeholder="Имя и фамилия"/>
+      <input class="inp" id="inp-name" placeholder="Имя и фамилия" maxlength="20"/>
       <div style="position:relative">
         <input class="inp inp-tg" id="inp-tg" placeholder="@username — заполняется автоматически" readonly/>
         <svg style="position:absolute;right:12px;top:50%;transform:translateY(-50%)" width="14" height="14" viewBox="0 0 12 12" fill="none">
           <polyline points="2,6 5,9 10,3" stroke="#c9a84c" stroke-width="1.5" stroke-linecap="round"/>
         </svg>
       </div>
-      <input class="inp" id="inp-phone" placeholder="+7 (___) ___-__-__" inputmode="tel"/>
+      <input class="inp" id="inp-phone" placeholder="+7 (___) ___-__-__" inputmode="tel" maxlength="18"/>
     </div>
 
     <div style="margin-top:14px;width:100%;background:#fdf8ee;border-radius:10px;padding:10px 14px;display:flex;gap:8px;align-items:flex-start">
@@ -467,37 +467,24 @@
       </div>
       <button class="btn btn-dark btn-sm">✓ Одобрить и отправить на оплату</button>
     </div>
-    <div class="req-card" style="opacity:.75">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
-        <span style="font-size:14px;font-weight:500;color:#1a1208">Клиент #2</span>
-        <span class="bdg bdg-p">На рассмотрении</span>
-      </div>
-      <div style="font-size:12px;color:#b09050;margin-bottom:3px">Дата · Наращивание (4–6)</div>
-      <div style="font-size:12px;color:#c9a84c;font-weight:500">@username · телефон</div>
+    <div class="st">Расписание <span style="font-weight:400;text-transform:none;letter-spacing:0;font-size:10px;color:#c4a870">— нажмите чтобы включить/выключить</span></div>
+    <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px" id="admin-slots">
+      <div class="slot slot-on" onclick="toggleSlot(this)">10:00</div>
+      <div class="slot slot-on" onclick="toggleSlot(this)">12:00</div>
+      <div class="slot slot-off" onclick="toggleSlot(this)">14:00</div>
+      <div class="slot slot-off" onclick="toggleSlot(this)">15:30</div>
+      <div class="slot slot-off" onclick="toggleSlot(this)">17:00</div>
+      <div class="slot slot-off" onclick="addSlot()" style="border-style:dashed">+ слот</div>
     </div>
-    <div class="st">Одобренные</div>
-    <div class="req-card" style="border-left-color:#c9a84c;opacity:.85">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
-        <span style="font-size:14px;font-weight:500;color:#1a1208">Клиент #3</span>
-        <span class="bdg bdg-g">✓ Бронь оплачена</span>
-      </div>
-      <div style="font-size:12px;color:#b09050;margin-bottom:3px">Дата · Гелевое покрытие</div>
-      <div style="font-size:12px;color:#c9a84c;font-weight:500">3 500 ₽</div>
-    </div>
-    <div class="st">Расписание</div>
-    <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px">
-      <div class="slot slot-on">10:00</div>
-      <div class="slot slot-on">12:00</div>
-      <div class="slot slot-off">14:00</div>
-      <div class="slot slot-off">15:30</div>
-      <div class="slot slot-taken">17:00</div>
-      <div class="slot slot-off">+ слот</div>
-    </div>
-    <div class="st">Рабочие дни</div>
-    <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:20px">
-      <div class="slot slot-on">Пн</div><div class="slot slot-on">Вт</div><div class="slot slot-on">Ср</div>
-      <div class="slot slot-on">Чт</div><div class="slot slot-on">Пт</div>
-      <div class="slot slot-taken">Сб</div><div class="slot slot-taken">Вс</div>
+    <div class="st">Рабочие дни <span style="font-weight:400;text-transform:none;letter-spacing:0;font-size:10px;color:#c4a870">— нажмите чтобы включить/выключить</span></div>
+    <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:20px" id="admin-days">
+      <div class="slot slot-on" onclick="toggleSlot(this)">Пн</div>
+      <div class="slot slot-on" onclick="toggleSlot(this)">Вт</div>
+      <div class="slot slot-on" onclick="toggleSlot(this)">Ср</div>
+      <div class="slot slot-on" onclick="toggleSlot(this)">Чт</div>
+      <div class="slot slot-on" onclick="toggleSlot(this)">Пт</div>
+      <div class="slot slot-off" onclick="toggleSlot(this)">Сб</div>
+      <div class="slot slot-off" onclick="toggleSlot(this)">Вс</div>
     </div>
   </div>
   <div class="bn">

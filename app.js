@@ -1,3 +1,53 @@
+// ── Phone mask ────────────────────────────────────────────────
+function initPhoneMask() {
+  const inp = document.getElementById('inp-phone');
+  if (!inp) return;
+  inp.addEventListener('input', e => {
+    let digits = inp.value.replace(/\D/g, '');
+    if (digits.startsWith('8')) digits = '7' + digits.slice(1);
+    if (!digits.startsWith('7')) digits = '7' + digits;
+    digits = digits.slice(0, 11);
+    let out = '+7';
+    if (digits.length > 1) out += ' (' + digits.slice(1, 4);
+    if (digits.length >= 4) out += ') ' + digits.slice(4, 7);
+    if (digits.length >= 7) out += '-' + digits.slice(7, 9);
+    if (digits.length >= 9) out += '-' + digits.slice(9, 11);
+    inp.value = out;
+  });
+  inp.addEventListener('keydown', e => {
+    if (e.key === 'Backspace' && inp.value === '+7') e.preventDefault();
+  });
+  inp.addEventListener('focus', () => {
+    if (!inp.value) inp.value = '+7';
+  });
+}
+
+// ── Admin schedule ────────────────────────────────────────────
+function toggleSlot(el) {
+  if (el.classList.contains('slot-on')) {
+    el.classList.replace('slot-on', 'slot-off');
+  } else {
+    el.classList.replace('slot-off', 'slot-on');
+  }
+}
+
+const SLOT_TIMES = ['08:00','09:00','09:30','10:00','10:30','11:00','11:30','12:00','13:00','14:00','14:30','15:00','15:30','16:00','17:00','18:00','19:00','20:00'];
+let addSlotIdx = 0;
+
+function addSlot() {
+  const container = document.getElementById('admin-slots');
+  const addBtn = container.querySelector('[onclick="addSlot()"]');
+  // Find next time not already shown
+  const shown = Array.from(container.querySelectorAll('.slot')).map(s => s.textContent.trim());
+  const next = SLOT_TIMES.find(t => !shown.includes(t));
+  if (!next) return;
+  const el = document.createElement('div');
+  el.className = 'slot slot-on';
+  el.textContent = next;
+  el.onclick = () => toggleSlot(el);
+  container.insertBefore(el, addBtn);
+}
+
 // ── Telegram WebApp init ─────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
   const tg = window.Telegram?.WebApp;
@@ -17,6 +67,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
   renderCal();
+  initPhoneMask();
 });
 
 function updateProfileUI(name, username) {
@@ -73,8 +124,8 @@ function updateTotal() {
 function shortLabel(l) {
   return l
     .replace('Комбинированный', 'Комб.')
-    .replace('Гелевое покрытие с укреплением', 'Гел. покрытие')
-    .replace('Наращивание', 'Нараш.');
+    .replace('Гелевое покрытие с укреплением', 'Гел. покрытие с укреп.')
+    .replace('Наращивание', 'Наращ.');
 }
 
 function selectMain(el, label, price) {
