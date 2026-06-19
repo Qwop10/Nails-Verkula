@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git add *)",
+      "Bash(git commit -m 'Gray everywhere + white readable text + запись terminology *)",
+      "Bash(git push *)"
+    ]
+  }
+}
