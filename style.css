@@ -1,7 +1,13 @@
 *{box-sizing:border-box;margin:0;padding:0}
-html,body{width:100%;height:100%;background:#1a1208;font-family:'Inter',sans-serif}
 
-/* Phone shell — fixed overlay, заполняет весь viewport в Telegram */
+/* На мобильном — весь фон кремовый, никаких тёмных полос */
+html,body{
+  width:100%;height:100%;
+  background:#fdf8ee;
+  font-family:'Inter',sans-serif;
+  overflow:hidden;
+}
+
 .phone-wrap{
   position:fixed;
   top:0;left:0;right:0;bottom:0;
@@ -9,14 +15,15 @@ html,body{width:100%;height:100%;background:#1a1208;font-family:'Inter',sans-ser
   overflow:hidden;
 }
 
-/* Desktop — показываем как рамку телефона */
+/* Desktop — тёмный фон + рамка телефона по центру */
 @media(min-width:500px){
+  html,body{background:#1a1208;overflow:auto}
   body{display:flex;align-items:center;justify-content:center;padding:20px}
   .phone-wrap{
     position:relative;
     top:auto;left:auto;right:auto;bottom:auto;
     width:390px;
-    height:min(844px, calc(100vh - 40px));
+    height:min(844px,calc(100vh - 40px));
     border-radius:44px;
     border:2px solid #c9a84c;
     box-shadow:0 0 60px rgba(201,168,76,.2)
