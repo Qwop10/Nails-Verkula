@@ -50,6 +50,32 @@ function addSlot() {
   container.insertBefore(el, addBtn);
 }
 
+// ── Keyboard / viewport resize (плавная анимация) ────────────
+(function () {
+  const wrap = document.querySelector('.phone-wrap') || document.body;
+
+  function onViewportResize() {
+    const vv = window.visualViewport;
+    if (!vv) return;
+    // Устанавливаем высоту напрямую — плавно через CSS transition
+    wrap.style.height = vv.height + 'px';
+    // Сдвигаем обёртку если ОС поднимает всю страницу
+    wrap.style.top = vv.offsetTop + 'px';
+  }
+
+  if (window.visualViewport) {
+    window.visualViewport.addEventListener('resize', onViewportResize);
+    window.visualViewport.addEventListener('scroll', onViewportResize);
+  }
+
+  // Убираем стандартный скролл браузера к инпуту (он вызывает прыжок)
+  document.addEventListener('focusin', e => {
+    if (e.target.matches('input, textarea')) {
+      e.target.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    }
+  }, true);
+})();
+
 // ── Telegram WebApp init ─────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
   const tg = window.Telegram?.WebApp;
