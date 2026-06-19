@@ -164,6 +164,7 @@ document.addEventListener('DOMContentLoaded', () => {
   initPhoneMask();
   schedRender();
   initServicesAdmin();
+  initAdminModal();
 });
 
 function updateProfileUI(name, username) {
@@ -401,6 +402,98 @@ function syncS7() {
   setText('s7-wishes', wishes);
   setText('s7-price', fmt(total));
   setText('cancel-info', getDateLabel() + ' · ' + selTime + ' — ' + getServiceLabel());
+}
+
+// ── Admin modal: выбор времени ────────────────────────────────
+function selectAdminSlot(el) {
+  document.querySelectorAll('#admin-time-slots .slot').forEach(s => {
+    if (!s.classList.contains('slot-taken')) s.className = 'slot slot-off';
+  });
+  el.className = 'slot slot-on';
+}
+
+// ── Admin modal: управление списком услуг ─────────────────────
+function initAdminModal() {
+  _initPickerManage('admin-main-picker', 'modal-main');
+  _initPickerManage('admin-addon-picker', 'modal-addon');
+}
+
+function _initPickerManage(pickerId, formId) {
+  const picker = document.getElementById(pickerId);
+  if (!picker) return;
+
+  // Кнопки удаления на каждом варианте (кроме «Без доп. услуги»)
+  picker.querySelectorAll('.svc-opt:not(.svc-none)').forEach(opt => _addOptDel(opt));
+
+  // Кнопка «+ Добавить» в конце пикера
+  const addBtn = document.createElement('button');
+  addBtn.className = 'modal-svc-add-btn';
+  addBtn.textContent = '+ Добавить услугу в список';
+  addBtn.onclick = function (e) {
+    e.stopPropagation();
+    const form = document.getElementById(formId);
+    form.style.display = form.style.display === 'flex' ? 'none' : 'flex';
+  };
+  picker.appendChild(addBtn);
+
+  // Форма добавления (вставляем ПОСЛЕ пикера в DOM)
+  const form = document.createElement('div');
+  form.id = formId;
+  form.className = 'modal-svc-form';
+  form.innerHTML =
+    '<input class="inp" id="' + formId + '-name" placeholder="Название" style="font-size:12px;margin-bottom:6px">' +
+    '<div style="display:flex;gap:6px;align-items:center;margin-bottom:8px">' +
+      '<input class="inp" id="' + formId + '-price" type="number" placeholder="Цена" style="width:90px;font-size:12px">' +
+      '<span style="font-size:11px;color:#b09050">₽</span>' +
+    '</div>' +
+    '<div style="display:flex;gap:6px">' +
+      '<button onclick="_modalSvcAdd(\'' + pickerId + '\',\'' + formId + '\')" style="flex:1;background:#c9a84c;color:#fff;border:none;border-radius:8px;padding:7px;font-size:12px;cursor:pointer;font-family:\'Inter\',sans-serif">Добавить</button>' +
+      '<button onclick="document.getElementById(\'' + formId + '\').style.display=\'none\'" style="background:none;border:.5px solid #d4b878;border-radius:8px;padding:7px 12px;font-size:12px;color:#b09050;cursor:pointer;font-family:\'Inter\',sans-serif">Отмена</button>' +
+    '</div>';
+  picker.insertAdjacentElement('afterend', form);
+}
+
+function _addOptDel(opt) {
+  if (opt.querySelector('.opt-del')) return;
+  const btn = document.createElement('button');
+  btn.className = 'opt-del';
+  btn.innerHTML = '×';
+  btn.title = 'Удалить из списка';
+  btn.onclick = function (e) {
+    e.stopPropagation();
+    opt.style.transition = 'opacity .2s, max-height .25s';
+    opt.style.overflow = 'hidden';
+    opt.style.maxHeight = opt.offsetHeight + 'px';
+    requestAnimationFrame(() => { opt.style.opacity = '0'; opt.style.maxHeight = '0'; });
+    setTimeout(() => opt.remove(), 260);
+  };
+  opt.appendChild(btn);
+}
+
+function _modalSvcAdd(pickerId, formId) {
+  const name  = (document.getElementById(formId + '-name')?.value  || '').trim();
+  const price = parseInt(document.getElementById(formId + '-price')?.value || '0') || 0;
+  if (!name) { document.getElementById(formId + '-name')?.focus(); return; }
+
+  const picker = document.getElementById(pickerId);
+  const isAddon = pickerId === 'admin-addon-picker';
+  const fn = isAddon ? 'pickAdminAddon' : 'pickAdminMain';
+
+  const opt = document.createElement('div');
+  opt.className = 'svc-opt';
+  opt.innerHTML = '<span>' + name + '</span><span class="svc-price">' + fmt(price) + '</span>';
+  opt.onclick = function () {
+    isAddon ? pickAdminAddon(opt, name, price) : pickAdminMain(opt, name, price);
+  };
+  _addOptDel(opt);
+
+  // Вставляем перед кнопкой «+ Добавить»
+  const addBtn = picker.querySelector('.modal-svc-add-btn');
+  picker.insertBefore(opt, addBtn);
+
+  document.getElementById(formId + '-name').value  = '';
+  document.getElementById(formId + '-price').value = '';
+  document.getElementById(formId).style.display = 'none';
 }
 
 // ── Admin edit modal ──────────────────────────────────────────

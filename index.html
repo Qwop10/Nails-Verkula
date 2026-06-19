@@ -148,7 +148,7 @@
     </div>
 
     <div class="st">Пожелания</div>
-    <textarea class="inp" id="wishes-input" rows="2" placeholder="Длина, дизайн, пожелания мастеру…" style="resize:none;margin-bottom:12px"></textarea>
+    <textarea class="inp" id="wishes-input" rows="2" maxlength="150" placeholder="Длина, дизайн, пожелания мастеру…" style="resize:none;margin-bottom:12px"></textarea>
 
     <div style="background:#fdf8ee;border-radius:10px;padding:10px 12px;margin-bottom:16px">
       <div style="display:flex;justify-content:space-between;font-size:12px">
@@ -732,10 +732,10 @@
 
       <!-- Время -->
       <div class="st">Время</div>
-      <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px">
-        <div class="slot slot-on">10:00</div>
-        <div class="slot slot-off">11:30</div>
-        <div class="slot slot-off">13:00</div>
+      <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px" id="admin-time-slots">
+        <div class="slot slot-on"    onclick="selectAdminSlot(this)">10:00</div>
+        <div class="slot slot-off"   onclick="selectAdminSlot(this)">11:30</div>
+        <div class="slot slot-off"   onclick="selectAdminSlot(this)">13:00</div>
         <div class="slot slot-taken">14:30</div>
       </div>
 

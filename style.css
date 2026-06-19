@@ -134,6 +134,12 @@ html,body{
 .svc-add-btn{width:100%;padding:10px;border:.5px dashed #c9a84c;border-radius:10px;background:none;color:#c9a84c;font-size:12px;font-family:'Inter',sans-serif;cursor:pointer;transition:.15s}
 .svc-add-btn:hover{background:#fdf8ee}
 .svc-add-form{display:none;flex-direction:column;gap:8px;padding:12px;background:#fdf8ee;border:.5px solid #c9a84c;border-radius:10px;margin-bottom:8px}
+/* Modal picker: add/delete service */
+.modal-svc-add-btn{width:100%;padding:8px;margin-top:4px;border:.5px dashed #c9a84c;border-radius:8px;background:none;color:#c9a84c;font-size:12px;font-family:'Inter',sans-serif;cursor:pointer;transition:.15s}
+.modal-svc-add-btn:hover{background:#fdf8ee}
+.modal-svc-form{display:none;flex-direction:column;padding:10px 12px;background:#fdf8ee;border:.5px solid #c9a84c;border-radius:10px;margin-top:4px}
+.opt-del{background:none;border:none;cursor:pointer;color:#c4a8c0;font-size:15px;line-height:1;padding:0 0 0 8px;flex-shrink:0;transition:.15s}
+.opt-del:hover{color:#e04040}
 
 /* Admin service picker (inside edit modal) */
 .svc-picker{display:none;flex-direction:column;gap:4px;margin-top:6px;margin-bottom:4px;padding:6px;background:#fdf8ee;border-radius:10px;border:.5px solid #f0d888}
