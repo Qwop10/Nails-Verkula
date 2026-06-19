@@ -71,7 +71,7 @@ export const themes = {
   nailsGold: {
     name: 'Nails Gold',
     colors: {
-      page: '#fdf8ee',
+      page: '#ffffff',
       surface: '#ffffff',
       surface2: '#fbf3e2',
       line: '#f0d888',
@@ -84,7 +84,7 @@ export const themes = {
       brandMuted: '#e3d4a3',
       brandContrast: '#ffffff',
     },
-    background: { type: 'solid', colors: ['#fdf8ee'], speed: 0 },
+    background: { type: 'solid', colors: ['#ffffff'], speed: 0 },
     button: { shape: 'rounded', elevation: 'subtle', primaryGradient: false, material: 'solid' },
     radius: 'soft',
   },
