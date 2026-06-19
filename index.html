@@ -6,164 +6,7 @@
 <title>Nails Verkula</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;1,400&family=Inter:wght@300;400;500&display=swap" rel="stylesheet"/>
-<style>
-*{box-sizing:border-box;margin:0;padding:0}
-html,body{height:100%;background:#1a1208;font-family:'Inter',sans-serif;display:flex;align-items:center;justify-content:center}
-
-/* Phone shell */
-.phone-wrap{position:relative;width:100%;max-width:390px;height:100vh;max-height:844px;background:#1a1208;border-radius:0;overflow:hidden;flex-shrink:0}
-@media(min-width:500px){
-  body{padding:20px}
-  .phone-wrap{border-radius:44px;border:2px solid #c9a84c;box-shadow:0 0 60px rgba(201,168,76,.2)}
-}
-
-/* Screen system */
-.screen{display:none;flex-direction:column;background:#fdf8ee;height:100%;width:100%}
-.screen.active{display:flex}
-
-/* Status bar */
-.sb{background:#fdf8ee;height:44px;display:flex;align-items:center;justify-content:space-between;padding:0 20px;flex-shrink:0;border-bottom:.5px solid #f0d888}
-.sb-t{font-size:13px;font-weight:600;color:#8a6418}
-.sb-right{display:flex;align-items:center;gap:6px}
-.bat{width:20px;height:10px;border:1.5px solid #c9a84c;border-radius:3px;padding:1.5px;position:relative}
-.bat::after{content:'';position:absolute;right:-4px;top:2.5px;width:3px;height:4px;background:#c9a84c;border-radius:0 2px 2px 0}
-.bat-f{background:#c9a84c;height:100%;width:70%;border-radius:1px}
-.bdg-admin{background:#fdf8ee;border:.5px solid #c9a84c;color:#c9a84c;border-radius:20px;font-size:9px;padding:1px 7px;font-weight:500}
-
-/* Scrollable content area */
-.sc{flex:1;overflow-y:auto;padding:16px 16px 0;-webkit-overflow-scrolling:touch}
-.sc::-webkit-scrollbar{width:2px}
-.sc::-webkit-scrollbar-thumb{background:#c9a84c;border-radius:2px}
-
-/* App header bar (sub-screens) */
-.ah{background:#fdf8ee;padding:12px 16px 10px;border-bottom:.5px solid #e8d5f0;flex-shrink:0}
-.ah-t{font-family:'Playfair Display',serif;font-size:17px;color:#1a1208}
-.ah-s{font-size:11px;color:#c4a870;margin-top:2px}
-.ah-tabs{display:flex;gap:6px;margin-top:8px}
-.ah-tab{padding:4px 14px;border-radius:20px;font-size:11px;cursor:pointer;transition:.15s}
-.ah-tab.on{background:#c9a84c;color:#fff}
-.ah-tab.off{border:.5px solid #c9a84c;color:#b09050}
-
-/* Bottom nav */
-.bn{background:#fdf8ee;border-top:.5px solid #f0d888;display:flex;height:64px;flex-shrink:0;padding-bottom:env(safe-area-inset-bottom)}
-.ni{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;font-size:10px;color:#d4b878;border:none;background:none;cursor:pointer;font-family:'Inter',sans-serif;padding:0;transition:.15s}
-.ni.on{color:#c9a84c}
-.ni svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
-
-/* Section title */
-.st{font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:#b09050;margin-bottom:8px;margin-top:12px}
-.st:first-child{margin-top:0}
-
-/* Product card */
-.pc{background:#fff;border-radius:12px;border:.5px solid #f0d888;padding:12px 14px;margin-bottom:8px;transition:.15s;cursor:pointer}
-.pc.sel{border:1.5px solid #c9a84c;background:#fffcf5}
-.pc:active{transform:scale(.98)}
-.pn{font-size:13px;color:#1a1208;line-height:1.3;margin-bottom:3px}
-.pp{font-size:14px;font-weight:500;color:#c9a84c}
-.pf{font-size:11px;color:#c4a870;font-style:italic}
-.cb{width:20px;height:20px;border-radius:5px;flex-shrink:0;display:flex;align-items:center;justify-content:center}
-.cb.on{background:#c9a84c}
-.cb.off{border:.5px solid #c9a84c}
-.cb.auto{border:.5px solid #c9a84c;background:#fdf8ee}
-
-/* Nail icon row */
-.nrow{display:flex;gap:3px;align-items:flex-end}
-
-/* Decorative floral */
-.floral{position:absolute;opacity:.07;pointer-events:none}
-
-/* Info row */
-.brow{display:flex;justify-content:space-between;padding:6px 0;border-bottom:.5px solid #f0e8f8}
-.brow:last-child{border-bottom:none}
-.bl{font-size:11px;color:#c4a870}
-.bv{font-size:11px;color:#1a1208;text-align:right;max-width:160px}
-
-/* Slots */
-.slot{padding:6px 14px;border-radius:20px;font-size:11px;cursor:pointer;transition:.15s}
-.slot:active{transform:scale(.95)}
-.slot-on{background:#c9a84c;color:#fff}
-.slot-off{border:.5px solid #c9a84c;color:#c9a84c}
-.slot-taken{background:#f0e8f8;color:#d4b878;text-decoration:line-through;cursor:default}
-
-/* Badge */
-.bdg{display:inline-flex;padding:3px 10px;border-radius:20px;font-size:10px;font-weight:500}
-.bdg-p{background:#fdf8ee;border:.5px solid #c9a84c;color:#c9a84c}
-.bdg-g{background:#fdf8ee;border:.5px solid #c9a84c;color:#8a6418}
-.bdg-done{background:#f0f0f0;border:.5px solid #ccc;color:#888}
-
-/* Request card (master) */
-.req-card{background:#fff;border-radius:12px;border-left:2.5px solid #c9a84c;padding:12px 14px;margin-bottom:8px;border-top:.5px solid #f0d888;border-bottom:.5px solid #e0d0ee;border-right:.5px solid #e0d0ee}
-
-/* Stat card */
-.stat-card{background:#fdf8ee;border-radius:10px;padding:10px 12px;flex:1}
-.stat-l{font-size:10px;color:#b09050;margin-bottom:2px}
-.stat-v{font-family:'Playfair Display',serif;font-size:18px;color:#1a1208}
-
-/* Modal */
-.modal-overlay{position:absolute;inset:0;background:rgba(26,18,8,.55);display:flex;align-items:flex-end;z-index:50;opacity:0;pointer-events:none;transition:opacity .25s}
-.modal-overlay.open{opacity:1;pointer-events:all}
-.modal-sheet{background:#fff;border-radius:20px 20px 0 0;padding:16px 16px 32px;width:100%;transform:translateY(100%);transition:transform .3s ease}
-.modal-overlay.open .modal-sheet{transform:translateY(0)}
-.modal-full{background:#fff;border-radius:0;padding:16px 16px 32px;width:100%;height:100%;display:flex;flex-direction:column;transform:translateY(100%);transition:transform .3s ease}
-.modal-overlay.open .modal-full{transform:translateY(0)}
-.modal-handle{width:36px;height:4px;background:#c9a84c;border-radius:2px;margin:0 auto 16px}
-.modal-warn{background:#fdf8ee;border:.5px solid #c9a84c;border-radius:10px;padding:10px 14px;margin-bottom:12px;font-size:12px;color:#8a6418;line-height:1.6}
-
-/* Buttons */
-.btn{display:block;width:100%;padding:14px;border:none;border-radius:12px;font-size:14px;font-family:'Inter',sans-serif;cursor:pointer;text-align:center;transition:.15s}
-.btn:active{transform:scale(.98)}
-.btn-primary{background:#c9a84c;color:#fff}
-.btn-dark{background:#8a6418;color:#fff}
-.btn-outline{background:transparent;border:.5px solid #c9a84c;color:#c9a84c}
-.btn-sm{padding:10px;font-size:12px;border-radius:10px}
-
-/* Input */
-input,textarea{font-family:'Inter',sans-serif}
-.inp{width:100%;background:#fff;border:.5px solid #f0d888;border-radius:10px;padding:12px 14px;font-size:14px;color:#1a1208;outline:none;transition:.15s}
-.inp:focus{border-color:#c9a84c}
-.inp::placeholder{color:#c4a870}
-.inp-tg{background:#fdf8ee;border:.5px solid #c9a84c;color:#b09050}
-
-/* Calendar */
-.cal{background:#fff;border-radius:12px;border:.5px solid #f0d888;padding:12px;margin-bottom:12px}
-.cal-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
-.cal-nav{font-size:12px;color:#b09050;cursor:pointer;padding:4px 8px;border-radius:6px;border:none;background:none;transition:.15s}
-.cal-nav:hover{background:#f0d888}
-.cal-title{font-size:13px;font-weight:500;color:#1a1208}
-.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;text-align:center}
-.cal-dow{font-size:10px;color:#d4b878;padding:2px 0}
-.cal-dow.wknd{color:#f0d0e0}
-.cal-day{font-size:12px;color:#1a1208;padding:4px 2px;cursor:pointer;border-radius:50%;width:28px;height:28px;display:inline-flex;align-items:center;justify-content:center;margin:0 auto;transition:.15s}
-.cal-day:hover{background:#f0d888}
-.cal-day.past{color:#e8c870;cursor:default}
-.cal-day.wknd-day{color:#f0d888}
-.cal-day.sel{background:#c9a84c;color:#fff}
-.cal-day.today{font-weight:600;border:.5px solid #c9a84c}
-.cal-day.empty{pointer-events:none}
-
-/* Profile avatar */
-.avatar{width:56px;height:56px;border-radius:50%;background:#fdf8ee;border:2px solid #c9a84c;display:flex;align-items:center;justify-content:center;font-family:'Playfair Display',serif;font-size:22px;color:#c9a84c}
-
-/* Portfolio grid */
-.portfolio{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:12px}
-.portfolio-item{aspect-ratio:1;border-radius:10px;border:.5px solid #f0d888}
-
-/* Centering layout (for full-screen pages without header) */
-.center-screen{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px 16px;position:relative;overflow:hidden}
-
-/* Summary bar above nav */
-.sum-bar{padding:10px 16px 12px;background:#fdf8ee;border-top:.5px solid #f0d888;flex-shrink:0}
-
-/* Price big */
-.pricebig{font-family:'Playfair Display',serif;font-size:22px;color:#c9a84c}
-
-/* Verified badge */
-.verified{display:inline-flex;align-items:center;gap:4px;background:#fdf8ee;border:.5px solid #c9a84c;border-radius:20px;padding:3px 10px;font-size:10px;color:#8a6418;margin-top:5px}
-
-/* History item */
-.hist-item{display:flex;justify-content:space-between;padding:8px 0;border-bottom:.5px solid #f0e8f8}
-.hist-item:last-child{border-bottom:none}
-</style>
+<link rel="stylesheet" href="style.css"/>
 </head>
 <body>
 <div class="phone-wrap">
@@ -174,7 +17,6 @@ input,textarea{font-family:'Inter',sans-serif}
 <div class="screen active" id="s1">
   <div class="sb"><span class="sb-t">9:41</span><div class="bat"><div class="bat-f"></div></div></div>
   <div class="center-screen">
-    <!-- Декоративные круги -->
     <svg class="floral" style="top:-20px;right:-20px" width="140" height="140" viewBox="0 0 140 140">
       <circle cx="120" cy="20" r="70" fill="none" stroke="#9b6db5" stroke-width="1.2"/>
       <circle cx="120" cy="20" r="46" fill="none" stroke="#9b6db5" stroke-width=".7"/>
@@ -183,7 +25,6 @@ input,textarea{font-family:'Inter',sans-serif}
       <circle cx="0" cy="100" r="65" fill="none" stroke="#9b6db5" stroke-width="1"/>
     </svg>
 
-    <!-- Ноготки -->
     <div class="nrow" style="margin-bottom:16px">
       <svg width="14" height="20" viewBox="0 0 11 16"><rect x="1" y="5" width="9" height="10" rx="4.5" fill="#f5ead0"/><rect x="2" y="1" width="7" height="6" rx="3.5" fill="#b8922a"/><ellipse cx="5.5" cy="5" rx="2.5" ry="1.4" fill="#fff0d0" opacity=".8"/></svg>
       <svg width="17" height="24" viewBox="0 0 13 19"><rect x="1" y="6" width="11" height="12" rx="5.5" fill="#ede0b8"/><rect x="2" y="1" width="9" height="8" rx="4.5" fill="#9a7020"/><ellipse cx="6.5" cy="6" rx="3" ry="1.6" fill="#fff8e8" opacity=".8"/></svg>
@@ -199,13 +40,19 @@ input,textarea{font-family:'Inter',sans-serif}
       <input class="inp" id="inp-name" placeholder="Имя и фамилия"/>
       <div style="position:relative">
         <input class="inp inp-tg" id="inp-tg" placeholder="@username — автоматически" readonly/>
-        <svg style="position:absolute;right:12px;top:50%;transform:translateY(-50%)" width="14" height="14" viewBox="0 0 12 12" fill="none"><polyline points="2,6 5,9 10,3" stroke="#c9a84c" stroke-width="1.5" stroke-linecap="round"/></svg>
+        <svg style="position:absolute;right:12px;top:50%;transform:translateY(-50%)" width="14" height="14" viewBox="0 0 12 12" fill="none">
+          <polyline points="2,6 5,9 10,3" stroke="#c9a84c" stroke-width="1.5" stroke-linecap="round"/>
+        </svg>
       </div>
       <input class="inp" id="inp-phone" placeholder="+7 (000) 000-00-00" inputmode="tel"/>
     </div>
 
     <div style="margin-top:14px;width:100%;background:#fdf8ee;border-radius:10px;padding:10px 14px;display:flex;gap:8px;align-items:flex-start">
-      <svg width="14" height="14" viewBox="0 0 12 12" fill="none" style="flex-shrink:0;margin-top:1px"><circle cx="6" cy="6" r="5" stroke="#9b6db5" stroke-width="1"/><rect x="5.4" y="3" width="1.2" height="4" rx=".6" fill="#9b6db5"/><rect x="5.4" y="8" width="1.2" height="1.2" rx=".6" fill="#9b6db5"/></svg>
+      <svg width="14" height="14" viewBox="0 0 12 12" fill="none" style="flex-shrink:0;margin-top:1px">
+        <circle cx="6" cy="6" r="5" stroke="#9b6db5" stroke-width="1"/>
+        <rect x="5.4" y="3" width="1.2" height="4" rx=".6" fill="#9b6db5"/>
+        <rect x="5.4" y="8" width="1.2" height="1.2" rx=".6" fill="#9b6db5"/>
+      </svg>
       <span style="font-size:11px;color:#7a4098;line-height:1.5">Для всех клиентов при записи взимается бронь 500 ₽</span>
     </div>
 
@@ -334,21 +181,20 @@ input,textarea{font-family:'Inter',sans-serif}
   <div class="sb"><span class="sb-t">9:41</span><div class="bat"><div class="bat-f"></div></div></div>
   <div class="ah">
     <div class="ah-t">Дата и время</div>
-    <div class="ah-s">Комб. маникюр + Дизайн · 1 800 ₽</div>
+    <div class="ah-s" id="s3-subtitle">Комб. маникюр + Дизайн · 1 800 ₽</div>
   </div>
 
   <div class="sc">
-    <!-- Календарь -->
     <div class="cal">
       <div class="cal-header">
         <button class="cal-nav" onclick="prevMonth()">◂</button>
-        <span class="cal-title" id="cal-title">Июль 2025</span>
+        <span class="cal-title" id="cal-title"></span>
         <button class="cal-nav" onclick="nextMonth()">▸</button>
       </div>
       <div class="cal-grid" id="cal-grid"></div>
     </div>
 
-    <div class="st">Время — <span id="sel-date-label">17 июля</span></div>
+    <div class="st">Время — <span id="sel-date-label">выберите дату</span></div>
     <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px" id="time-slots">
       <div class="slot slot-on" onclick="selectTime(this,'10:00')">10:00</div>
       <div class="slot slot-off" onclick="selectTime(this,'11:30')">11:30</div>
@@ -365,7 +211,7 @@ input,textarea{font-family:'Inter',sans-serif}
     </div>
 
     <div style="background:#fdf8ee;border-radius:12px;padding:12px 14px;margin-bottom:16px">
-      <div style="font-size:13px;font-weight:500;color:#8a6418;margin-bottom:3px" id="confirm-datetime">17 июля · 10:00 ✓</div>
+      <div style="font-size:13px;font-weight:500;color:#8a6418;margin-bottom:3px" id="confirm-datetime">выберите дату и время</div>
       <div style="font-size:12px;color:#b09050">Комб. маникюр + Дизайн · 1 800 ₽</div>
     </div>
   </div>
@@ -391,16 +237,13 @@ input,textarea{font-family:'Inter',sans-serif}
       <circle cx="85" cy="15" r="50" fill="none" stroke="#9b6db5" stroke-width=".8"/>
       <circle cx="85" cy="15" r="32" fill="none" stroke="#9b6db5" stroke-width=".5"/>
     </svg>
-
     <div style="width:64px;height:64px;border-radius:50%;background:#fdf8ee;border:2px solid #c9a84c;display:flex;align-items:center;justify-content:center;margin-bottom:14px">
       <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#c9a84c" stroke-width="2" stroke-linecap="round">
         <circle cx="12" cy="12" r="9"/><polyline points="12,7 12,12 15,14"/>
       </svg>
     </div>
-
     <div style="font-family:'Playfair Display',serif;font-size:20px;color:#1a1208;margin-bottom:6px;text-align:center">Заявка отправлена</div>
     <div style="font-size:12px;color:#b09050;text-align:center;line-height:1.7;margin-bottom:16px">17 июля · 10:00<br/>Комб. маникюр + Дизайн</div>
-
     <div class="nrow" style="justify-content:center;margin-bottom:16px">
       <svg width="14" height="20" viewBox="0 0 11 16"><rect x="1" y="5" width="9" height="10" rx="4.5" fill="#f5ead0"/><rect x="2" y="1" width="7" height="6" rx="3.5" fill="#b8922a"/><ellipse cx="5.5" cy="5" rx="2.5" ry="1.4" fill="#fff0d0" opacity=".8"/></svg>
       <svg width="17" height="24" viewBox="0 0 13 19"><rect x="1" y="6" width="11" height="12" rx="5.5" fill="#ede0b8"/><rect x="2" y="1" width="9" height="8" rx="4.5" fill="#9a7020"/><ellipse cx="6.5" cy="6" rx="3" ry="1.6" fill="#fff8e8" opacity=".8"/></svg>
@@ -408,21 +251,17 @@ input,textarea{font-family:'Inter',sans-serif}
       <svg width="17" height="24" viewBox="0 0 13 19"><rect x="1" y="6" width="11" height="12" rx="5.5" fill="#ede0b8"/><rect x="2" y="1" width="9" height="8" rx="4.5" fill="#9a7020"/><ellipse cx="6.5" cy="6" rx="3" ry="1.6" fill="#fff8e8" opacity=".8"/></svg>
       <svg width="14" height="20" viewBox="0 0 11 16"><rect x="1" y="5" width="9" height="10" rx="4.5" fill="#f5ead0"/><rect x="2" y="1" width="7" height="6" rx="3.5" fill="#b8922a"/><ellipse cx="5.5" cy="5" rx="2.5" ry="1.4" fill="#fff0d0" opacity=".8"/></svg>
     </div>
-
     <div style="width:100%;background:#fdf8ee;border:.5px solid #c9a84c;border-radius:12px;padding:12px 14px;margin-bottom:10px">
       <div style="font-size:12px;color:#8a6418;font-weight:500;margin-bottom:4px">Мастер рассмотрит заявку</div>
       <div style="font-size:11px;color:#b09050;line-height:1.6">Verkula свяжется с вами в Telegram, уточнит детали и пришлёт ссылку на оплату брони</div>
     </div>
-
     <div style="width:100%;background:#fff;border:.5px solid #f0d888;border-radius:12px;padding:12px 14px;margin-bottom:14px">
       <div class="brow"><span class="bl">Статус</span><span class="bv" style="color:#c9a84c;font-weight:500">На рассмотрении</span></div>
       <div class="brow"><span class="bl">Пожелания</span><span class="bv">Нюдовый дизайн</span></div>
       <div class="brow"><span class="bl">Связь</span><span class="bv">@anna_klimova</span></div>
     </div>
-
     <button class="btn btn-outline" onclick="goTo('s7')">Посмотреть мои заявки</button>
   </div>
-
   <div class="bn">
     <button class="ni" onclick="goTo('s1')"><svg viewBox="0 0 24 24"><path d="M3 9.5L12 3l9 6.5V20a1 1 0 01-1 1H5a1 1 0 01-1-1z"/><polyline points="9 21 9 12 15 12 15 21"/></svg>Главная</button>
     <button class="ni" onclick="goTo('s2')"><svg viewBox="0 0 24 24"><circle cx="10" cy="10" r="7"/><path d="M21 21l-4.35-4.35"/></svg>Услуги</button>
@@ -439,7 +278,6 @@ input,textarea{font-family:'Inter',sans-serif}
     <div class="ah-t">Заявка одобрена ✓</div>
     <div class="ah-s">Verkula подтвердила запись</div>
   </div>
-
   <div class="sc">
     <div class="nrow" style="justify-content:center;margin-bottom:16px">
       <svg width="16" height="22" viewBox="0 0 12 17"><rect x="1" y="5" width="10" height="11" rx="5" fill="#f5ead0"/><rect x="2" y="1" width="8" height="7" rx="4" fill="#b8922a"/><ellipse cx="6" cy="5" rx="3" ry="1.6" fill="#fff0d0" opacity=".8"/></svg>
@@ -448,7 +286,6 @@ input,textarea{font-family:'Inter',sans-serif}
       <svg width="19" height="26" viewBox="0 0 14 20"><rect x="1" y="6" width="12" height="13" rx="6" fill="#c9a84c"/><rect x="2" y="1" width="10" height="8" rx="5" fill="#9a7020"/><ellipse cx="7" cy="6" rx="3.5" ry="1.9" fill="#fff8e8" opacity=".8"/></svg>
       <svg width="16" height="22" viewBox="0 0 12 17"><rect x="1" y="5" width="10" height="11" rx="5" fill="#f5ead0"/><rect x="2" y="1" width="8" height="7" rx="4" fill="#b8922a"/><ellipse cx="6" cy="5" rx="3" ry="1.6" fill="#fff0d0" opacity=".8"/></svg>
     </div>
-
     <div class="pc" style="margin-bottom:10px;border:1.5px solid #c9a84c">
       <div class="st" style="margin-top:0;margin-bottom:8px">Согласовано с мастером</div>
       <div class="brow"><span class="bl">Услуга</span><span class="bv">Комб. маникюр</span></div>
@@ -456,23 +293,19 @@ input,textarea{font-family:'Inter',sans-serif}
       <div class="brow"><span class="bl">Дата</span><span class="bv">17 июля · 10:00</span></div>
       <div class="brow"><span class="bl">Уточнено мастером</span><span class="bv" style="color:#8a6418">Без изменений</span></div>
     </div>
-
     <div style="background:#fff;border:1.5px solid #c9a84c;border-radius:12px;padding:14px 16px;text-align:center;margin-bottom:10px">
       <div class="st" style="text-align:center;margin-top:0;margin-bottom:6px">К оплате сейчас</div>
       <div style="font-family:'Playfair Display',serif;font-size:36px;color:#c9a84c;margin:6px 0">500 ₽</div>
       <div style="font-size:12px;color:#b09050;line-height:1.6">Бронь входит в стоимость процедуры.<br/>Не возвращается при отмене менее чем за 24 ч.</div>
     </div>
-
     <div style="background:#fdf8ee;border-radius:10px;padding:10px 14px;display:flex;align-items:center;gap:8px;margin-bottom:16px">
       <svg width="14" height="14" viewBox="0 0 12 12" fill="none" style="flex-shrink:0"><circle cx="6" cy="6" r="5" stroke="#9b6db5" stroke-width="1"/><rect x="5.4" y="3" width="1.2" height="4" rx=".6" fill="#9b6db5"/><rect x="5.4" y="8" width="1.2" height="1.2" rx=".6" fill="#9b6db5"/></svg>
       <span style="font-size:11px;color:#7a4098">Остаток на месте: 1 300 ₽ · Итого: 1 800 ₽</span>
     </div>
   </div>
-
   <div class="sum-bar">
     <button class="btn btn-dark" onclick="goTo('s6')">Оплатить 500 ₽ через Telegram →</button>
   </div>
-
   <div class="bn">
     <button class="ni" onclick="goTo('s1')"><svg viewBox="0 0 24 24"><path d="M3 9.5L12 3l9 6.5V20a1 1 0 01-1 1H5a1 1 0 01-1-1z"/><polyline points="9 21 9 12 15 12 15 21"/></svg>Главная</button>
     <button class="ni on" onclick="goTo('s2')"><svg viewBox="0 0 24 24"><circle cx="10" cy="10" r="7"/><path d="M21 21l-4.35-4.35"/></svg>Услуги</button>
@@ -493,16 +326,13 @@ input,textarea{font-family:'Inter',sans-serif}
     <svg class="floral" style="bottom:-15px;left:-15px" width="100" height="100" viewBox="0 0 80 80">
       <circle cx="0" cy="80" r="50" fill="none" stroke="#9b6db5" stroke-width="1"/>
     </svg>
-
     <div style="width:64px;height:64px;border-radius:50%;background:#fdf8ee;border:2px solid #c9a84c;display:flex;align-items:center;justify-content:center;margin-bottom:14px">
       <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
         <polyline points="4,12 9,17 20,7" stroke="#c9a84c" stroke-width="2.5" stroke-linecap="round"/>
       </svg>
     </div>
-
     <div style="font-family:'Playfair Display',serif;font-size:20px;color:#1a1208;margin-bottom:6px;text-align:center">Запись оформлена!</div>
     <div style="font-size:12px;color:#b09050;text-align:center;line-height:1.7;margin-bottom:16px">17 июля · 10:00<br/>Комб. маникюр + Дизайн</div>
-
     <div class="nrow" style="justify-content:center;margin-bottom:16px">
       <svg width="14" height="20" viewBox="0 0 11 16"><rect x="1" y="5" width="9" height="10" rx="4.5" fill="#f5ead0"/><rect x="2" y="1" width="7" height="6" rx="3.5" fill="#b8922a"/><ellipse cx="5.5" cy="5" rx="2.5" ry="1.4" fill="#fff0d0" opacity=".8"/></svg>
       <svg width="17" height="24" viewBox="0 0 13 19"><rect x="1" y="6" width="11" height="12" rx="5.5" fill="#ede0b8"/><rect x="2" y="1" width="9" height="8" rx="4.5" fill="#9a7020"/><ellipse cx="6.5" cy="6" rx="3" ry="1.6" fill="#fff8e8" opacity=".8"/></svg>
@@ -510,21 +340,17 @@ input,textarea{font-family:'Inter',sans-serif}
       <svg width="17" height="24" viewBox="0 0 13 19"><rect x="1" y="6" width="11" height="12" rx="5.5" fill="#ede0b8"/><rect x="2" y="1" width="9" height="8" rx="4.5" fill="#9a7020"/><ellipse cx="6.5" cy="6" rx="3" ry="1.6" fill="#fff8e8" opacity=".8"/></svg>
       <svg width="14" height="20" viewBox="0 0 11 16"><rect x="1" y="5" width="9" height="10" rx="4.5" fill="#f5ead0"/><rect x="2" y="1" width="7" height="6" rx="3.5" fill="#b8922a"/><ellipse cx="5.5" cy="5" rx="2.5" ry="1.4" fill="#fff0d0" opacity=".8"/></svg>
     </div>
-
     <div style="width:100%;background:#fdf8ee;border-radius:12px;padding:12px 14px;margin-bottom:10px">
       <div style="font-size:12px;color:#8a6418;font-weight:500;margin-bottom:3px">Напоминание придёт за 24 часа</div>
       <div style="font-size:12px;color:#b09050">в ваш Telegram 💜</div>
     </div>
-
     <div style="width:100%;background:#fff;border:.5px solid #f0d888;border-radius:12px;padding:12px 14px;margin-bottom:14px">
       <div class="brow"><span class="bl">Бронь оплачена</span><span class="bv" style="color:#8a6418">✓ 500 ₽</span></div>
       <div class="brow"><span class="bl">Остаток на месте</span><span class="bv">1 300 ₽</span></div>
       <div class="brow"><span class="bl">Итого</span><span class="bv" style="color:#c9a84c;font-weight:500">1 800 ₽</span></div>
     </div>
-
     <button class="btn btn-outline" onclick="goTo('s7')">Посмотреть мою запись</button>
   </div>
-
   <div class="bn">
     <button class="ni" onclick="goTo('s1')"><svg viewBox="0 0 24 24"><path d="M3 9.5L12 3l9 6.5V20a1 1 0 01-1 1H5a1 1 0 01-1-1z"/><polyline points="9 21 9 12 15 12 15 21"/></svg>Главная</button>
     <button class="ni" onclick="goTo('s2')"><svg viewBox="0 0 24 24"><circle cx="10" cy="10" r="7"/><path d="M21 21l-4.35-4.35"/></svg>Услуги</button>
@@ -537,9 +363,7 @@ input,textarea{font-family:'Inter',sans-serif}
      ═══════════════════════════════════ -->
 <div class="screen" id="s7">
   <div class="sb"><span class="sb-t">9:41</span><div class="bat"><div class="bat-f"></div></div></div>
-
   <div class="sc" style="padding-top:20px">
-    <!-- Аватар -->
     <div style="display:flex;align-items:center;justify-content:center;gap:12px;margin-bottom:10px">
       <svg width="13" height="18" viewBox="0 0 10 14"><rect x="1" y="4" width="8" height="9" rx="4" fill="#f5ead0"/><rect x="2" y="1" width="6" height="5" rx="3" fill="#b8922a"/></svg>
       <div class="avatar">А</div>
@@ -554,7 +378,6 @@ input,textarea{font-family:'Inter',sans-serif}
       </div>
     </div>
 
-    <!-- Заявка -->
     <div class="st">Моя заявка</div>
     <div class="pc sel" style="margin-bottom:10px">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
@@ -571,12 +394,10 @@ input,textarea{font-family:'Inter',sans-serif}
       </button>
     </div>
 
-    <!-- Кнопка "Мастер одобрил" (демо) -->
     <button class="btn btn-dark btn-sm" style="margin-bottom:14px" onclick="goTo('s5')">
       ← Демо: перейти к оплате брони
     </button>
 
-    <!-- Портфолио -->
     <div class="st">Портфолио мастера</div>
     <div class="portfolio" style="margin-bottom:14px">
       <div class="portfolio-item" style="background:linear-gradient(135deg,#f5ead0,#e8d070)"></div>
@@ -584,20 +405,19 @@ input,textarea{font-family:'Inter',sans-serif}
       <div class="portfolio-item" style="background:linear-gradient(135deg,#f0d888,#b8922a)"></div>
     </div>
 
-    <!-- История -->
     <div class="st">История посещений</div>
     <div class="pc" style="margin-bottom:20px">
       <div class="hist-item">
         <div><div style="font-size:12px;color:#1a1208">Гелевое покрытие</div><div style="font-size:11px;color:#c4a870">01 июня 2025</div></div>
-        <div style="text-align:right"><div style="font-size:12px;font-weight:500;color:#b09050">3 500 ₽</div><span class="bdg bdg-done" style="font-size:10px">Завершена</span></div>
+        <div style="text-align:right"><div style="font-size:12px;font-weight:500;color:#b09050">3 500 ₽</div><span class="bdg bdg-done">Завершена</span></div>
       </div>
       <div class="hist-item">
         <div><div style="font-size:12px;color:#1a1208">Наращивание + Дизайн</div><div style="font-size:11px;color:#c4a870">10 мая 2025</div></div>
-        <div style="text-align:right"><div style="font-size:12px;font-weight:500;color:#b09050">4 300 ₽</div><span class="bdg bdg-done" style="font-size:10px">Завершена</span></div>
+        <div style="text-align:right"><div style="font-size:12px;font-weight:500;color:#b09050">4 300 ₽</div><span class="bdg bdg-done">Завершена</span></div>
       </div>
       <div class="hist-item">
         <div><div style="font-size:12px;color:#1a1208">Комб. маникюр</div><div style="font-size:11px;color:#c4a870">18 апреля 2025</div></div>
-        <div style="text-align:right"><div style="font-size:12px;font-weight:500;color:#b09050">1 500 ₽</div><span class="bdg bdg-done" style="font-size:10px">Завершена</span></div>
+        <div style="text-align:right"><div style="font-size:12px;font-weight:500;color:#b09050">1 500 ₽</div><span class="bdg bdg-done">Завершена</span></div>
       </div>
     </div>
   </div>
@@ -608,7 +428,6 @@ input,textarea{font-family:'Inter',sans-serif}
     <button class="ni on" onclick="goTo('s7')"><svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>Профиль</button>
   </div>
 
-  <!-- Модал отмены -->
   <div class="modal-overlay" id="cancel-modal" onclick="closeModalOutside(event,'cancel-modal')">
     <div class="modal-sheet">
       <div class="modal-handle"></div>
@@ -637,17 +456,11 @@ input,textarea{font-family:'Inter',sans-serif}
 <div class="screen" id="s9">
   <div class="sb">
     <span class="sb-t">9:41</span>
-    <div class="sb-right">
-      <span class="bdg-admin">Мастер</span>
-      <div class="bat"><div class="bat-f"></div></div>
-    </div>
+    <div class="sb-right"><span class="bdg-admin">Мастер</span><div class="bat"><div class="bat-f"></div></div></div>
   </div>
   <div class="ah">
     <div style="display:flex;justify-content:space-between;align-items:center">
-      <div>
-        <div class="ah-t">Панель мастера</div>
-        <div class="ah-s">Verkula · 17 июля 2025</div>
-      </div>
+      <div><div class="ah-t">Панель мастера</div><div class="ah-s">Verkula · 17 июля 2025</div></div>
       <div class="nrow">
         <svg width="12" height="16" viewBox="0 0 9 13"><rect x="1" y="4" width="7" height="8" rx="3.5" fill="#f5ead0"/><rect x="2" y="1" width="5" height="5" rx="2.5" fill="#b8922a"/></svg>
         <svg width="14" height="20" viewBox="0 0 11 16"><rect x="1" y="5" width="9" height="10" rx="4.5" fill="#c9a84c"/><rect x="2" y="1" width="7" height="6" rx="3.5" fill="#9a7020"/></svg>
@@ -655,17 +468,13 @@ input,textarea{font-family:'Inter',sans-serif}
       </div>
     </div>
   </div>
-
   <div class="sc">
-    <!-- Статистика -->
     <div style="display:flex;gap:8px;margin-bottom:14px">
       <div class="stat-card"><div class="stat-l">Записей</div><div class="stat-v">4</div></div>
       <div class="stat-card"><div class="stat-l">Новых заявок</div><div class="stat-v">3</div></div>
       <div class="stat-card"><div class="stat-l">Выручка</div><div class="stat-v" style="font-size:15px">7 200₽</div></div>
     </div>
-
     <div class="st">Заявки на рассмотрении</div>
-
     <div class="req-card">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
         <span style="font-size:14px;font-weight:500;color:#1a1208">Анна К.</span>
@@ -679,9 +488,8 @@ input,textarea{font-family:'Inter',sans-serif}
         <button class="btn btn-outline btn-sm" style="flex:1" onclick="openModal('edit-modal')">✏️ Изменить</button>
         <button class="btn btn-outline btn-sm" style="flex:1">✕ Отклонить</button>
       </div>
-      <button class="btn btn-dark btn-sm" onclick="closeModal('edit-modal');goTo('s4')">✓ Одобрить и отправить на оплату</button>
+      <button class="btn btn-dark btn-sm">✓ Одобрить и отправить на оплату</button>
     </div>
-
     <div class="req-card" style="opacity:.75">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
         <span style="font-size:14px;font-weight:500;color:#1a1208">Ольга Т.</span>
@@ -690,7 +498,6 @@ input,textarea{font-family:'Inter',sans-serif}
       <div style="font-size:12px;color:#b09050;margin-bottom:3px">18 июля · 14:00 · Наращивание (4–6)</div>
       <div style="font-size:12px;color:#c9a84c;font-weight:500">@olga_t · +7 918 555-22-11</div>
     </div>
-
     <div class="st">Одобренные на сегодня</div>
     <div class="req-card" style="border-left-color:#c9a84c;opacity:.85">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
@@ -700,7 +507,6 @@ input,textarea{font-family:'Inter',sans-serif}
       <div style="font-size:12px;color:#b09050;margin-bottom:3px">17 июля · 12:00 · Гелевое покрытие</div>
       <div style="font-size:12px;color:#c9a84c;font-weight:500">3 500 ₽</div>
     </div>
-
     <div class="st">Расписание</div>
     <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px">
       <div class="slot slot-on">10:00</div>
@@ -708,21 +514,15 @@ input,textarea{font-family:'Inter',sans-serif}
       <div class="slot slot-off">14:00</div>
       <div class="slot slot-off">15:30</div>
       <div class="slot slot-taken">17:00</div>
-      <div class="slot slot-off" style="cursor:pointer">+ слот</div>
+      <div class="slot slot-off">+ слот</div>
     </div>
-
     <div class="st">Рабочие дни</div>
     <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:20px">
-      <div class="slot slot-on">Пн</div>
-      <div class="slot slot-on">Вт</div>
-      <div class="slot slot-on">Ср</div>
-      <div class="slot slot-on">Чт</div>
-      <div class="slot slot-on">Пт</div>
-      <div class="slot slot-taken">Сб</div>
-      <div class="slot slot-taken">Вс</div>
+      <div class="slot slot-on">Пн</div><div class="slot slot-on">Вт</div><div class="slot slot-on">Ср</div>
+      <div class="slot slot-on">Чт</div><div class="slot slot-on">Пт</div>
+      <div class="slot slot-taken">Сб</div><div class="slot slot-taken">Вс</div>
     </div>
   </div>
-
   <div class="bn">
     <button class="ni on"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>Заявки</button>
     <button class="ni"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>Услуги</button>
@@ -730,7 +530,6 @@ input,textarea{font-family:'Inter',sans-serif}
     <button class="ni"><svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>Профиль</button>
   </div>
 
-  <!-- Модал редактирования заявки -->
   <div class="modal-overlay" id="edit-modal" onclick="closeModalOutside(event,'edit-modal')">
     <div class="modal-full">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
@@ -738,36 +537,29 @@ input,textarea{font-family:'Inter',sans-serif}
         <button onclick="closeModal('edit-modal')" style="font-size:18px;color:#c9a84c;background:none;border:none;cursor:pointer;padding:4px">✕</button>
       </div>
       <div style="font-size:12px;color:#b09050;margin-bottom:14px">Анна К. · @anna_klimova</div>
-
       <div class="st" style="margin-top:0">Услуга</div>
       <div class="pc sel" style="margin-bottom:8px">
         <div style="display:flex;justify-content:space-between;align-items:center">
-          <span class="pn">Комбинированный маникюр</span>
-          <span class="pp">1 500 ₽</span>
+          <span class="pn">Комбинированный маникюр</span><span class="pp">1 500 ₽</span>
         </div>
       </div>
-
       <div class="st">Доп. услуга</div>
       <div class="pc" style="margin-bottom:4px;border:1.5px solid #c9a84c">
         <div style="display:flex;justify-content:space-between;align-items:center">
-          <span class="pn">Покрытие гель-лаком</span>
-          <span class="pp">300 ₽</span>
+          <span class="pn">Покрытие гель-лаком</span><span class="pp">300 ₽</span>
         </div>
       </div>
       <div style="font-size:11px;color:#c4a870;font-style:italic;margin-bottom:12px">было: Дизайн 300 ₽ — мастер изменила на правильную услугу</div>
-
       <div class="st">Время</div>
       <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px">
         <div class="slot slot-on">10:00</div>
         <div class="slot slot-off">11:30</div>
         <div class="slot slot-off">13:00</div>
       </div>
-
       <div style="background:#fdf8ee;border-radius:10px;padding:12px 14px;margin-bottom:14px">
         <div style="font-size:13px;color:#8a6418;font-weight:500;margin-bottom:3px">Новая сумма: 1 800 ₽</div>
         <div style="font-size:11px;color:#b09050">Следующие записи дня не сбиваются</div>
       </div>
-
       <div style="margin-top:auto;display:flex;flex-direction:column;gap:8px">
         <button class="btn btn-dark" onclick="closeModal('edit-modal')">Сохранить и отправить на оплату</button>
         <button class="btn btn-outline" onclick="closeModal('edit-modal')">Отмена</button>
@@ -776,164 +568,13 @@ input,textarea{font-family:'Inter',sans-serif}
   </div>
 </div>
 
-<!-- Кнопка переключения клиент/мастер (демо) -->
-<div id="role-switcher" style="position:fixed;bottom:80px;right:16px;z-index:100;display:flex;flex-direction:column;gap:6px">
-  <button onclick="goTo('s9')" style="background:#1a1208;color:#c9a84c;border:.5px solid #c9a84c;border-radius:20px;padding:6px 14px;font-size:11px;font-family:'Inter',sans-serif;cursor:pointer;white-space:nowrap">
-    👑 Режим мастера
-  </button>
-  <button onclick="goTo('s1')" style="background:#1a1208;color:#f0d888;border:.5px solid #f0d888;border-radius:20px;padding:6px 14px;font-size:11px;font-family:'Inter',sans-serif;cursor:pointer;white-space:nowrap">
-    👤 Режим клиента
-  </button>
+<!-- Демо: переключение режимов -->
+<div id="role-switcher">
+  <button class="rs-master" onclick="goTo('s9')">👑 Режим мастера</button>
+  <button class="rs-client" onclick="goTo('s1')">👤 Режим клиента</button>
 </div>
 
 </div><!-- /phone-wrap -->
-
-<script>
-// ── Navigation ──────────────────────────────────────────────
-function goTo(id) {
-  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-  const target = document.getElementById(id);
-  if (target) target.classList.add('active');
-  // Hide switcher on master screen
-  document.getElementById('role-switcher').style.display =
-    (id === 's9') ? 'none' : 'flex';
-}
-
-// ── Modal ────────────────────────────────────────────────────
-function openModal(id) {
-  const el = document.getElementById(id);
-  if (!el) return;
-  el.classList.add('open');
-}
-function closeModal(id) {
-  const el = document.getElementById(id);
-  if (!el) return;
-  el.classList.remove('open');
-}
-function closeModalOutside(e, id) {
-  if (e.target === e.currentTarget) closeModal(id);
-}
-
-// ── Service selection ────────────────────────────────────────
-let mainService = {label:'Комбинированный маникюр', price:1500};
-let addonService = {label:'Дизайн', price:300};
-
-function updateTotal() {
-  const total = mainService.price + addonService.price;
-  const mainShort = mainService.label.replace('Комбинированный','Комб.').replace('Гелевое покрытие с укреплением','Гел. покрытие').replace('Наращивание','Нараз.');
-  document.getElementById('selection-label').textContent = mainShort + ' + ' + addonService.label;
-  document.getElementById('selection-price').textContent = total.toLocaleString('ru-RU') + ' ₽';
-  document.getElementById('total-display').textContent = total.toLocaleString('ru-RU') + ' ₽';
-}
-
-function selectMain(el, label, price) {
-  document.querySelectorAll('#s2 .pc').forEach(c => {
-    if (c.querySelector('.cb.on') && !c.querySelector('.cb.auto')) {
-      const btn = c.querySelector('.cb');
-      if (btn && c !== el) {
-        c.classList.remove('sel');
-        btn.className = 'cb off';
-        btn.innerHTML = '';
-      }
-    }
-  });
-  el.classList.add('sel');
-  const cb = el.querySelector('.cb');
-  cb.className = 'cb on';
-  cb.innerHTML = '<svg width="11" height="11" viewBox="0 0 9 9" fill="none"><polyline points="1.5,4.5 3.5,6.5 7.5,2.5" stroke="#fff" stroke-width="1.5" stroke-linecap="round"/></svg>';
-  mainService = {label, price};
-  updateTotal();
-}
-
-function selectAddon(el, label, price) {
-  // find all addon cards (after the "Дополнительно" section title)
-  const allPc = document.querySelectorAll('#s2 .pc');
-  const addonCards = Array.from(allPc).filter(c => !c.style.opacity && !c.querySelector('.pf'));
-  addonCards.forEach(c => {
-    if (c !== el) {
-      c.classList.remove('sel');
-      const cb = c.querySelector('.cb');
-      if (cb && cb.classList.contains('on')) {
-        cb.className = 'cb off';
-        cb.innerHTML = '';
-      }
-    }
-  });
-  el.classList.toggle('sel');
-  const cb = el.querySelector('.cb');
-  if (el.classList.contains('sel')) {
-    cb.className = 'cb on';
-    cb.innerHTML = '<svg width="11" height="11" viewBox="0 0 9 9" fill="none"><polyline points="1.5,4.5 3.5,6.5 7.5,2.5" stroke="#fff" stroke-width="1.5" stroke-linecap="round"/></svg>';
-    addonService = {label, price};
-  } else {
-    cb.className = 'cb off';
-    cb.innerHTML = '';
-    addonService = {label:'', price:0};
-  }
-  updateTotal();
-}
-
-// ── Calendar ─────────────────────────────────────────────────
-let calYear = 2025, calMonth = 6; // July (0-indexed)
-let selDay = 17;
-const MONTHS_RU = ['Январь','Февраль','Март','Апрель','Май','Июнь','Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь'];
-const MONTHS_GEN = ['января','февраля','марта','апреля','мая','июня','июля','августа','сентября','октября','ноября','декабря'];
-
-function renderCal() {
-  document.getElementById('cal-title').textContent = MONTHS_RU[calMonth] + ' ' + calYear;
-  const grid = document.getElementById('cal-grid');
-  grid.innerHTML = '';
-  const dows = ['Пн','Вт','Ср','Чт','Пт','Сб','Вс'];
-  dows.forEach((d,i) => {
-    const span = document.createElement('span');
-    span.className = 'cal-dow' + (i>=5?' wknd':'');
-    span.textContent = d;
-    grid.appendChild(span);
-  });
-  const first = new Date(calYear, calMonth, 1);
-  let startDow = first.getDay(); // 0=Sun
-  startDow = startDow === 0 ? 6 : startDow - 1; // Mon=0
-  for (let i = 0; i < startDow; i++) {
-    const span = document.createElement('span');
-    span.className = 'cal-day empty';
-    grid.appendChild(span);
-  }
-  const days = new Date(calYear, calMonth+1, 0).getDate();
-  const today = new Date();
-  for (let d = 1; d <= days; d++) {
-    const dow = (startDow + d - 1) % 7;
-    const isWknd = dow >= 5;
-    const isPast = new Date(calYear, calMonth, d) < new Date(today.getFullYear(), today.getMonth(), today.getDate());
-    const isSel = d === selDay && calMonth === 6 && calYear === 2025;
-    const span = document.createElement('span');
-    span.className = 'cal-day' + (isWknd?' wknd-day':'') + (isPast?' past':'') + (isSel?' sel':'');
-    span.textContent = d;
-    if (!isPast && !isWknd) {
-      span.onclick = () => {
-        selDay = d;
-        document.getElementById('sel-date-label').textContent = d + ' ' + MONTHS_GEN[calMonth];
-        document.getElementById('confirm-datetime').textContent = d + ' ' + MONTHS_GEN[calMonth] + ' · 10:00 ✓';
-        renderCal();
-      };
-    }
-    grid.appendChild(span);
-  }
-}
-function prevMonth() { calMonth--; if (calMonth<0){calMonth=11;calYear--;} renderCal(); }
-function nextMonth() { calMonth++; if (calMonth>11){calMonth=0;calYear++;} renderCal(); }
-
-// ── Time slots ───────────────────────────────────────────────
-function selectTime(el, time) {
-  document.querySelectorAll('#time-slots .slot-on').forEach(s => {
-    if (s !== el) { s.className='slot slot-off'; s.onclick=function(){selectTime(this,s.textContent)}; }
-  });
-  el.className = 'slot slot-on';
-  const d = document.getElementById('sel-date-label').textContent;
-  document.getElementById('confirm-datetime').textContent = d + ' · ' + time + ' ✓';
-}
-
-// ── Init ─────────────────────────────────────────────────────
-renderCal();
-</script>
+<script src="app.js"></script>
 </body>
 </html>
