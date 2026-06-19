@@ -12,11 +12,8 @@ html,body{
   position:fixed;
   top:0;left:0;right:0;
   height:100vh;
-  height:100dvh; /* учитывает клавиатуру в современных браузерах */
   background:#fdf8ee;
   overflow:hidden;
-  will-change:height;
-  transition:height 0.22s ease;
 }
 
 /* Desktop — тёмный фон + рамка телефона по центру */

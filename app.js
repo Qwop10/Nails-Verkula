@@ -50,29 +50,35 @@ function addSlot() {
   container.insertBefore(el, addBtn);
 }
 
-// ── Keyboard / viewport resize (плавная анимация) ────────────
+// ── Viewport lock (предотвращает прыжки при открытии клавиатуры) ──
 (function () {
-  const wrap = document.querySelector('.phone-wrap') || document.body;
+  const wrap = document.querySelector('.phone-wrap');
+  if (!wrap) return;
 
-  function onViewportResize() {
-    const vv = window.visualViewport;
-    if (!vv) return;
-    // Устанавливаем высоту напрямую — плавно через CSS transition
-    wrap.style.height = vv.height + 'px';
-    // Сдвигаем обёртку если ОС поднимает всю страницу
-    wrap.style.top = vv.offsetTop + 'px';
+  function lockHeight(h) {
+    wrap.style.height = h + 'px';
   }
 
-  if (window.visualViewport) {
-    window.visualViewport.addEventListener('resize', onViewportResize);
-    window.visualViewport.addEventListener('scroll', onViewportResize);
+  const tg = window.Telegram?.WebApp;
+  if (tg) {
+    // viewportStableHeight — высота БЕЗ клавиатуры, не меняется при её открытии
+    tg.ready();
+    lockHeight(tg.viewportStableHeight || window.innerHeight);
+    tg.onEvent('viewportChanged', function () {
+      // Обновляем только если клавиатура закрыта (стабильное состояние)
+      if (tg.viewportStableHeight) lockHeight(tg.viewportStableHeight);
+    });
+  } else {
+    // Вне Telegram: фиксируем начальную высоту, не трогаем при ресайзе
+    lockHeight(window.innerHeight);
   }
 
-  // Убираем стандартный скролл браузера к инпуту (он вызывает прыжок)
-  document.addEventListener('focusin', e => {
-    if (e.target.matches('input, textarea')) {
-      e.target.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
-    }
+  // Скролл к инпуту внутри контейнера — без сдвига всей страницы
+  document.addEventListener('focusin', function (e) {
+    if (!e.target.matches('input, textarea')) return;
+    setTimeout(function () {
+      e.target.scrollIntoView({ block: 'nearest', behavior: 'instant' });
+    }, 100);
   }, true);
 })();
 
