@@ -1,25 +1,30 @@
 *{box-sizing:border-box;margin:0;padding:0}
 html,body{height:100%;background:#1a1208;font-family:'Inter',sans-serif;display:flex;align-items:center;justify-content:center}
 
-/* Phone shell */
-.phone-wrap{position:relative;width:100%;max-width:390px;height:100vh;max-height:844px;background:#1a1208;border-radius:0;overflow:hidden;flex-shrink:0}
+/* Phone shell — 9:16 */
+.phone-wrap{
+  position:relative;
+  height:100vh;
+  width:min(100vw, calc(100vh * 9 / 16));
+  background:#1a1208;
+  border-radius:0;
+  overflow:hidden;
+  flex-shrink:0;
+}
 @media(min-width:500px){
   body{padding:20px}
-  .phone-wrap{border-radius:44px;border:2px solid #c9a84c;box-shadow:0 0 60px rgba(201,168,76,.2)}
+  .phone-wrap{
+    height:min(calc(100vh - 40px), calc((100vw - 40px) * 16 / 9));
+    width:min(calc(100vw - 40px), calc((100vh - 40px) * 9 / 16));
+    border-radius:44px;
+    border:2px solid #c9a84c;
+    box-shadow:0 0 60px rgba(201,168,76,.2)
+  }
 }
 
 /* Screen system */
 .screen{display:none;flex-direction:column;background:#fdf8ee;height:100%;width:100%}
 .screen.active{display:flex}
-
-/* Status bar */
-.sb{background:#fdf8ee;height:44px;display:flex;align-items:center;justify-content:space-between;padding:0 20px;flex-shrink:0;border-bottom:.5px solid #f0d888}
-.sb-t{font-size:13px;font-weight:600;color:#8a6418}
-.sb-right{display:flex;align-items:center;gap:6px}
-.bat{width:20px;height:10px;border:1.5px solid #c9a84c;border-radius:3px;padding:1.5px;position:relative}
-.bat::after{content:'';position:absolute;right:-4px;top:2.5px;width:3px;height:4px;background:#c9a84c;border-radius:0 2px 2px 0}
-.bat-f{background:#c9a84c;height:100%;width:70%;border-radius:1px}
-.bdg-admin{background:#fdf8ee;border:.5px solid #c9a84c;color:#c9a84c;border-radius:20px;font-size:9px;padding:1px 7px;font-weight:500}
 
 /* Scrollable content area */
 .sc{flex:1;overflow-y:auto;padding:16px 16px 0;-webkit-overflow-scrolling:touch}
@@ -34,6 +39,9 @@ html,body{height:100%;background:#1a1208;font-family:'Inter',sans-serif;display:
 .ah-tab{padding:4px 14px;border-radius:20px;font-size:11px;cursor:pointer;transition:.15s}
 .ah-tab.on{background:#c9a84c;color:#fff}
 .ah-tab.off{border:.5px solid #c9a84c;color:#b09050}
+
+/* Admin badge (in header) */
+.bdg-admin{background:#fdf8ee;border:.5px solid #c9a84c;color:#c9a84c;border-radius:20px;font-size:9px;padding:1px 7px;font-weight:500}
 
 /* Bottom nav */
 .bn{background:#fdf8ee;border-top:.5px solid #f0d888;display:flex;height:64px;flex-shrink:0;padding-bottom:env(safe-area-inset-bottom)}
@@ -95,10 +103,19 @@ html,body{height:100%;background:#1a1208;font-family:'Inter',sans-serif;display:
 .modal-overlay.open{opacity:1;pointer-events:all}
 .modal-sheet{background:#fff;border-radius:20px 20px 0 0;padding:16px 16px 32px;width:100%;transform:translateY(100%);transition:transform .3s ease}
 .modal-overlay.open .modal-sheet{transform:translateY(0)}
-.modal-full{background:#fff;border-radius:0;padding:16px 16px 32px;width:100%;height:100%;display:flex;flex-direction:column;transform:translateY(100%);transition:transform .3s ease}
+.modal-full{background:#fff;border-radius:0;padding:16px 16px 24px;width:100%;height:100%;display:flex;flex-direction:column;overflow-y:auto;transform:translateY(100%);transition:transform .3s ease}
 .modal-overlay.open .modal-full{transform:translateY(0)}
 .modal-handle{width:36px;height:4px;background:#c9a84c;border-radius:2px;margin:0 auto 16px}
 .modal-warn{background:#fdf8ee;border:.5px solid #c9a84c;border-radius:10px;padding:10px 14px;margin-bottom:12px;font-size:12px;color:#8a6418;line-height:1.6}
+
+/* Admin service picker (inside edit modal) */
+.svc-picker{display:none;flex-direction:column;gap:4px;margin-top:6px;margin-bottom:4px;padding:6px;background:#fdf8ee;border-radius:10px;border:.5px solid #f0d888}
+.svc-picker.open{display:flex}
+.svc-opt{display:flex;justify-content:space-between;align-items:center;padding:8px 10px;border-radius:8px;cursor:pointer;transition:.15s;font-size:12px;color:#1a1208}
+.svc-opt:hover{background:#f0d888}
+.svc-opt.active{background:#c9a84c;color:#fff}
+.svc-opt .svc-price{font-size:11px;opacity:.8}
+.svc-none{color:#c05060;font-style:italic}
 
 /* Buttons */
 .btn{display:block;width:100%;padding:14px;border:none;border-radius:12px;font-size:14px;font-family:'Inter',sans-serif;cursor:pointer;text-align:center;transition:.15s}
