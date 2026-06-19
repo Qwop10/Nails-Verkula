@@ -146,17 +146,15 @@ export async function setBookingFee(fee: number): Promise<void> {
 export async function getReport(period: ReportPeriod): Promise<{
   revenue: number; visits: number; avg: number; popular: { label: string; count: number }[];
 }> {
-  await delay(250);
-  const mult = { day: 1, week: 5, month: 20, year: 230 }[period];
-  const visits = mult;
-  const revenue = mult * 2400;
+  await delay(150);
+  void period;
+  // Реальная статистика появится с серверным эндпоинтом отчётов.
+  // Пока показываем нули, без выдуманных данных.
   return {
-    revenue, visits, avg: visits ? Math.round(revenue / visits) : 0,
-    popular: [
-      { label: 'Комбинированный маникюр', count: Math.round(mult * 0.5) },
-      { label: 'Гелевое покрытие', count: Math.round(mult * 0.3) },
-      { label: 'Наращивание', count: Math.round(mult * 0.2) },
-    ],
+    revenue: 0,
+    visits: 0,
+    avg: 0,
+    popular: [],
   };
 }
 
