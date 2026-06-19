@@ -10,16 +10,13 @@ import { CLIENT_ROUTES } from '../../routes';
 import { useBookingStore, useNotification } from '../../store';
 import { Button } from '../../components/ui';
 import { createRequest } from '../../services/requestsApi';
+import { getDaySlots } from '../../services/masterApi';
 
 const MONTHS = [
   'Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь',
   'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь',
 ];
 const WEEKDAYS = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
-
-// Мок слотов (заменится доступностью с бэкенда).
-const SLOTS = ['10:00', '11:30', '13:00', '14:30', '16:00', '17:30'];
-const TAKEN = new Set(['14:30', '17:30']);
 
 const pad = (n: number) => String(n).padStart(2, '0');
 const iso = (y: number, m: number, d: number) => `${y}-${pad(m + 1)}-${pad(d)}`;
@@ -32,6 +29,9 @@ export const DateTimeSelect: React.FC = () => {
     clientName, clientPhone, mainId, addonIds, wishes,
   } = useBookingStore();
   const [submitting, setSubmitting] = useState(false);
+  const [slots, setSlots] = useState<string[]>([]);
+  const [taken, setTaken] = useState<Set<string>>(new Set());
+  const [loadingSlots, setLoadingSlots] = useState(false);
 
   const today = useMemo(() => new Date(), []);
   const minYM = today.getFullYear() * 12 + today.getMonth();
@@ -44,6 +44,25 @@ export const DateTimeSelect: React.FC = () => {
     hideMainButton();
     if (!hasSelection()) navigate(CLIENT_ROUTES.CATALOG);
   }, [hasSelection, navigate]);
+
+  // Слоты на выбранную дату — из расписания мастера (минус занятые).
+  useEffect(() => {
+    if (!date) { setSlots([]); setTaken(new Set()); return; }
+    let active = true;
+    setLoadingSlots(true);
+    getDaySlots(date)
+      .then((r) => {
+        if (!active) return;
+        setSlots(r.slots || []);
+        setTaken(new Set(r.taken || []));
+        // Если выбранное время больше недоступно — сбросить.
+        if (time && (!r.slots.includes(time) || (r.taken || []).includes(time))) setTime(null);
+      })
+      .catch(() => { if (active) { setSlots([]); setTaken(new Set()); } })
+      .finally(() => { if (active) setLoadingSlots(false); });
+    return () => { active = false; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [date]);
 
   // Сетка месяца (понедельник — первый день).
   const cells = useMemo(() => {
@@ -148,28 +167,34 @@ export const DateTimeSelect: React.FC = () => {
       {date && (
         <>
           <p className="text-[11px] uppercase tracking-wider text-muted mt-5 mb-2">Время</p>
-          <div className="flex flex-wrap gap-2">
-            {SLOTS.map((s) => {
-              const taken = TAKEN.has(s);
-              const on = time === s;
-              return (
-                <button
-                  key={s}
-                  disabled={taken}
-                  onClick={() => setTime(s)}
-                  className={`px-3 py-1.5 rounded-full text-xs border transition-colors ${
-                    taken
-                      ? 'line-through text-hint border-line bg-card-2'
-                      : on
-                      ? 'bg-brand text-[color:rgb(var(--brand-contrast))] border-brand'
-                      : 'text-brand border-brand hover:bg-brand/10'
-                  }`}
-                >
-                  {s}
-                </button>
-              );
-            })}
-          </div>
+          {loadingSlots ? (
+            <p className="text-xs text-hint">Загрузка…</p>
+          ) : slots.length === 0 ? (
+            <p className="text-xs text-hint">На этот день запись недоступна — выберите другую дату.</p>
+          ) : (
+            <div className="flex flex-wrap gap-2">
+              {slots.map((s) => {
+                const isTaken = taken.has(s);
+                const on = time === s;
+                return (
+                  <button
+                    key={s}
+                    disabled={isTaken}
+                    onClick={() => setTime(s)}
+                    className={`px-3 py-1.5 rounded-full text-xs border transition-colors ${
+                      isTaken
+                        ? 'line-through text-hint border-line bg-card-2'
+                        : on
+                        ? 'bg-brand text-[color:rgb(var(--brand-contrast))] border-brand'
+                        : 'text-brand border-brand hover:bg-brand/10'
+                    }`}
+                  >
+                    {s}
+                  </button>
+                );
+              })}
+            </div>
+          )}
         </>
       )}
 

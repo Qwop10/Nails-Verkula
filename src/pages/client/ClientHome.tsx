@@ -10,6 +10,7 @@ import { useBookingStore, useAppStore } from '../../store';
 import { BRAND } from '../../config/brand';
 import { Button } from '../../components/ui';
 import { FloralDecor } from '../../components/FloralDecor';
+import { getProfile } from '../../services/requestsApi';
 
 /** Маска телефона +7 (XXX) XXX-XX-XX. */
 function formatPhone(value: string): string {
@@ -50,6 +51,20 @@ export const ClientHome: React.FC = () => {
     if (!name && tgFullName) setName(tgFullName);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tgFullName]);
+
+  // Автозаполнение из сохранённого профиля (имя/телефон с прошлой записи).
+  useEffect(() => {
+    let active = true;
+    getProfile()
+      .then((p) => {
+        if (!active) return;
+        if (p.name && !clientName) setName((cur) => cur || p.name);
+        if (p.phone) setPhone((cur) => cur || formatPhone(p.phone));
+      })
+      .catch(() => {});
+    return () => { active = false; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const phoneDigits = phone.replace(/\D/g, '');
   const isValid = name.trim().length >= 2 && phoneDigits.length === 11;

@@ -61,6 +61,47 @@ app.get('/api/me', auth, (req, res) =>
   ok(res, { id: req.user.id, isMaster: isMaster(req.user.id) })
 );
 
+// Профиль клиента (сохранённые имя/телефон) — для автозаполнения формы.
+app.get('/api/profile', auth, async (req, res) => {
+  try {
+    const c = await db.getClient(req.user.id);
+    ok(res, c || { id: String(req.user.id), name: '', phone: '' });
+  } catch (e) { console.error(e); res.status(500).json({ success: false, error: 'server_error' }); }
+});
+
+// Расписание (для клиента — какие дни/слоты доступны).
+app.get('/api/schedule', auth, async (_req, res) => {
+  try { ok(res, await db.getSchedule()); }
+  catch (e) { console.error(e); res.status(500).json({ success: false, error: 'server_error' }); }
+});
+
+// Доступные слоты на конкретную дату (?date=YYYY-MM-DD).
+app.get('/api/slots', auth, async (req, res) => {
+  try {
+    const date = String(req.query.date || '');
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return res.status(400).json({ success: false, error: 'bad_date' });
+    ok(res, await db.getDayAvailability(date));
+  } catch (e) { console.error(e); res.status(500).json({ success: false, error: 'server_error' }); }
+});
+
+// Управление расписанием (мастер).
+app.post('/api/admin/schedule/day', auth, requireMaster, async (req, res) => {
+  try {
+    await db.setDayWorking(req.body?.day, !!req.body?.working);
+    ok(res, await db.getSchedule());
+  } catch (e) { console.error(e); res.status(500).json({ success: false, error: 'server_error' }); }
+});
+
+app.post('/api/admin/schedule/slot', auth, requireMaster, async (req, res) => {
+  try {
+    const { day, time, action } = req.body || {};
+    if (!day || !/^\d{2}:\d{2}$/.test(time || '')) return res.status(400).json({ success: false, error: 'bad_input' });
+    if (action === 'remove') await db.removeScheduleSlot(day, time);
+    else await db.addScheduleSlot(day, time);
+    ok(res, await db.getSchedule());
+  } catch (e) { console.error(e); res.status(500).json({ success: false, error: 'server_error' }); }
+});
+
 // ============================ CLIENT ============================
 
 // Создать заявку

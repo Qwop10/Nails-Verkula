@@ -91,37 +91,46 @@ export async function updateRequest(
    TODO(backend): добавить эндпоинты и переключить на api, как заявки. */
 const delay = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
-let SCHEDULE: ScheduleDay[] = [
-  { key: 'mon', label: 'Пн', working: true, slots: ['10:00', '12:00'] },
-  { key: 'tue', label: 'Вт', working: true, slots: ['10:00', '12:00'] },
-  { key: 'wed', label: 'Ср', working: true, slots: ['10:00', '12:00'] },
-  { key: 'thu', label: 'Чт', working: true, slots: ['10:00', '14:00'] },
-  { key: 'fri', label: 'Пт', working: true, slots: ['10:00', '12:00', '15:30'] },
-  { key: 'sat', label: 'Сб', working: false, slots: [] },
-  { key: 'sun', label: 'Вс', working: false, slots: [] },
-];
 let SERVICES: ServiceItem[] = NAIL_SERVICES.map((s) => ({
   id: s.id, label: s.label, price: s.price, kind: s.kind, active: true,
 }));
 let BOOKING_FEE = 500;
 let SETTINGS: MasterSettings = { notifications: true, reminders: true, autoApprove: false };
 
+// ── Расписание — реальный /api ────────────────────────────────
+const DAY_LABEL: Record<string, string> = {
+  mon: 'Пн', tue: 'Вт', wed: 'Ср', thu: 'Чт', fri: 'Пт', sat: 'Сб', sun: 'Вс',
+};
+interface ServerScheduleDay { day: string; working: boolean; slots: string[]; }
+
+function toScheduleDay(d: ServerScheduleDay): ScheduleDay {
+  return { key: d.day, label: DAY_LABEL[d.day] || d.day, working: d.working, slots: d.slots || [] };
+}
+
+/** Стандартный набор времён (для выпадающего списка при правке заявки мастером). */
 export function allSlots(): string[] {
-  return [...new Set(SCHEDULE.flatMap((d) => d.slots))].sort();
+  return ['09:00', '10:00', '11:00', '11:30', '12:00', '13:00', '14:00', '14:30', '15:00', '15:30', '16:00', '17:00', '18:00', '19:00'];
+}
+
+/** Доступность на дату: слоты расписания минус занятые. */
+export async function getDaySlots(date: string): Promise<{ slots: string[]; taken: string[] }> {
+  return api.get<{ slots: string[]; taken: string[] }>(`/api/slots?date=${encodeURIComponent(date)}`);
 }
 
 export async function getSchedule(): Promise<ScheduleDay[]> {
-  await delay(200); return SCHEDULE.map((d) => ({ ...d, slots: [...d.slots] }));
+  const rows = await api.get<ServerScheduleDay[]>('/api/schedule');
+  return rows.map(toScheduleDay);
 }
 export async function toggleWorkingDay(key: string): Promise<void> {
-  await delay(100); SCHEDULE = SCHEDULE.map((d) => (d.key === key ? { ...d, working: !d.working } : d));
+  const cur = await getSchedule();
+  const day = cur.find((d) => d.key === key);
+  await api.post('/api/admin/schedule/day', { day: key, working: !day?.working });
 }
 export async function addSlot(key: string, time: string): Promise<void> {
-  await delay(100);
-  SCHEDULE = SCHEDULE.map((d) => (d.key === key && !d.slots.includes(time) ? { ...d, slots: [...d.slots, time].sort() } : d));
+  await api.post('/api/admin/schedule/slot', { day: key, time, action: 'add' });
 }
 export async function removeSlot(key: string, time: string): Promise<void> {
-  await delay(100); SCHEDULE = SCHEDULE.map((d) => (d.key === key ? { ...d, slots: d.slots.filter((s) => s !== time) } : d));
+  await api.post('/api/admin/schedule/slot', { day: key, time, action: 'remove' });
 }
 
 export async function getServices(): Promise<{ services: ServiceItem[]; bookingFee: number }> {

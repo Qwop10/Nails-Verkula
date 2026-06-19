@@ -72,6 +72,12 @@ export async function createRequest(p: CreateRequestPayload): Promise<ClientRequ
   return toClientRequest(r);
 }
 
+/** Сохранённый профиль клиента (имя/телефон) для автозаполнения. */
+export async function getProfile(): Promise<{ name: string; phone: string }> {
+  const c = await api.get<{ name?: string; phone?: string }>('/api/profile');
+  return { name: c?.name || '', phone: c?.phone || '' };
+}
+
 export async function getMyRequests(): Promise<ClientRequest[]> {
   const rows = await api.get<ServerRequest[]>('/api/requests/mine');
   return rows.map(toClientRequest);
