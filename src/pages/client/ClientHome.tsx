@@ -65,55 +65,74 @@ export const ClientHome: React.FC = () => {
     'w-full bg-card border border-line rounded-card px-4 py-3 text-[15px] text-fg placeholder-hint outline-none focus:border-brand transition-colors';
 
   return (
-    <div className="flex-1 flex flex-col justify-center relative overflow-hidden">
+    <div className="flex-1 flex flex-col justify-center items-center relative overflow-hidden px-1">
       <FloralDecor />
+
+      {/* Флакончики лака (как в оригинале) */}
+      <div className="flex items-end justify-center gap-1.5 mb-4">
+        <svg width="14" height="20" viewBox="0 0 11 16"><rect x="1" y="5" width="9" height="10" rx="4.5" fill="#f5ead0" /><rect x="2" y="1" width="7" height="6" rx="3.5" fill="#b8922a" /><ellipse cx="5.5" cy="5" rx="2.5" ry="1.4" fill="#fff0d0" opacity=".8" /></svg>
+        <svg width="17" height="24" viewBox="0 0 13 19"><rect x="1" y="6" width="11" height="12" rx="5.5" fill="#ede0b8" /><rect x="2" y="1" width="9" height="8" rx="4.5" fill="#9a7020" /><ellipse cx="6.5" cy="6" rx="3" ry="1.6" fill="#fff8e8" opacity=".8" /></svg>
+        <svg width="20" height="28" viewBox="0 0 15 22"><rect x="1" y="7" width="13" height="14" rx="6.5" fill="#f0d888" /><rect x="2" y="1" width="11" height="9" rx="5.5" fill="#c9a84c" /><ellipse cx="7.5" cy="7" rx="3.5" ry="2" fill="#fff8e8" opacity=".8" /></svg>
+        <svg width="17" height="24" viewBox="0 0 13 19"><rect x="1" y="6" width="11" height="12" rx="5.5" fill="#ede0b8" /><rect x="2" y="1" width="9" height="8" rx="4.5" fill="#9a7020" /><ellipse cx="6.5" cy="6" rx="3" ry="1.6" fill="#fff8e8" opacity=".8" /></svg>
+        <svg width="14" height="20" viewBox="0 0 11 16"><rect x="1" y="5" width="9" height="10" rx="4.5" fill="#f5ead0" /><rect x="2" y="1" width="7" height="6" rx="3.5" fill="#b8922a" /><ellipse cx="5.5" cy="5" rx="2.5" ry="1.4" fill="#fff0d0" opacity=".8" /></svg>
+      </div>
+
       {/* Заголовок */}
-      <div className="text-center pt-2">
-        <h1 className="font-serif text-2xl text-fg">Добро пожаловать</h1>
-        <p className="text-sm text-muted italic mt-0.5">{BRAND.name}</p>
+      <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 22, color: '#1a1208', marginBottom: 4 }}>
+        Добро пожаловать
+      </div>
+      <div style={{ fontSize: 12, color: '#b09050', marginBottom: 20, fontStyle: 'italic' }}>
+        {BRAND.name}
       </div>
 
       {/* Форма — все поля обязательны */}
-      <div className="mt-6 flex flex-col gap-3">
+      <div className="w-full flex flex-col gap-2.5">
         <input
           className={inputCls}
           placeholder="Имя и фамилия"
           value={name}
           onChange={(e) => setName(e.target.value)}
           autoComplete="name"
-          maxLength={40}
+          maxLength={20}
         />
         {/* @username — заполняется автоматически из Telegram, только для чтения */}
         <div className="relative">
           <input
-            className={`${inputCls} ${tgUsername ? 'text-muted' : ''} pr-10`}
+            className={`${inputCls} pr-10`}
             placeholder="@username — заполняется автоматически"
             value={tgUsername}
             readOnly
           />
           {tgUsername && (
-            <span className="absolute right-4 top-1/2 -translate-y-1/2 text-brand">✓</span>
+            <svg style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)' }} width="14" height="14" viewBox="0 0 12 12" fill="none">
+              <polyline points="2,6 5,9 10,3" stroke="#c9a84c" strokeWidth="1.5" strokeLinecap="round" />
+            </svg>
           )}
         </div>
         <input
           className={inputCls}
-          placeholder="+7 (000) 000-00-00"
+          placeholder="+7 (___) ___-__-__"
           value={phone}
           onChange={(e) => setPhone(formatPhone(e.target.value))}
           inputMode="tel"
           autoComplete="tel"
+          maxLength={18}
         />
       </div>
 
       {/* Заметка про бронь */}
-      <div className="mt-4 flex items-center gap-2 px-1">
-        <span className="text-brand text-sm">ⓘ</span>
-        <p className="text-xs text-brand-dark leading-relaxed">
+      <div style={{ marginTop: 14, width: '100%', background: '#fdf8ee', borderRadius: 10, padding: '10px 14px', display: 'flex', gap: 8, alignItems: 'flex-start' }}>
+        <svg width="14" height="14" viewBox="0 0 12 12" fill="none" style={{ flexShrink: 0, marginTop: 1 }}>
+          <circle cx="6" cy="6" r="5" stroke="#9b6db5" strokeWidth="1" />
+          <rect x="5.4" y="3" width="1.2" height="4" rx=".6" fill="#9b6db5" />
+          <rect x="5.4" y="8" width="1.2" height="1.2" rx=".6" fill="#9b6db5" />
+        </svg>
+        <span style={{ fontSize: 11, color: '#7a4098', lineHeight: 1.5 }}>
           Для всех клиентов при записи взимается бронь {BRAND.booking.fee} ₽
-        </p>
+        </span>
       </div>
 
-      <div className="mt-6">
+      <div className="mt-4 w-full">
         <Button
           variant="primary"
           size="lg"
