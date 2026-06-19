@@ -11,6 +11,7 @@ import { nailServiceLabels, nailServiceLabel } from '../shared/domain.js';
 import { initStorage, getStorageDir } from './storage.mjs';
 import {
   sendMessage,
+  sendPhoto,
   hasBotToken,
   sendWelcome,
   setWebhook,
@@ -299,12 +300,13 @@ app.post('/api/admin/requests/:id/approve', auth, requireMaster, async (req, res
   try {
     const r = await db.setStatus(req.params.id, 'payment_pending', ['pending_review']);
     if (!r) return res.status(409).json({ success: false, error: 'bad_status' });
-    await sendMessage(
-      r.clientId,
+    const caption =
       `✅ <b>Заявка одобрена</b>\n${prettyDate(r.date)} · ${r.time} · ${labelsOf(r)}\n` +
-        `К оплате бронь ${fmtRu(r.bookingFee)}. Откройте приложение, чтобы оплатить 👇`,
-      { reply_markup: { inline_keyboard: [[{ text: '💳 Оплатить бронь', web_app: { url: APP_URL } }]] } }
-    );
+      `К оплате бронь ${fmtRu(r.bookingFee)}. Откройте приложение, чтобы оплатить 👇`;
+    const keyboard = { reply_markup: { inline_keyboard: [[{ text: '💳 Оплатить бронь', web_app: { url: APP_URL } }]] } };
+    // С картинкой; если фото не отправилось — обычным текстом.
+    const photoOk = await sendPhoto(r.clientId, `${APP_URL}/photo/approved.png`, caption, keyboard);
+    if (!photoOk) await sendMessage(r.clientId, caption, keyboard);
     ok(res, r);
   } catch (e) { console.error(e); res.status(500).json({ success: false, error: 'server_error' }); }
 });

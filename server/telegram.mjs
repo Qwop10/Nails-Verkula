@@ -99,6 +99,38 @@ export async function sendMessage(chatId, text, extra = {}) {
 }
 
 /**
+ * Отправляет фото по URL с подписью (HTML). Возвращает true при успехе.
+ */
+export async function sendPhoto(chatId, photoUrl, caption, extra = {}) {
+  if (!BOT_TOKEN) {
+    console.warn('[telegram] BOT_TOKEN не задан — фото не отправлено');
+    return false;
+  }
+  try {
+    const res = await fetch(`${API}/sendPhoto`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        chat_id: chatId,
+        photo: photoUrl,
+        caption,
+        parse_mode: 'HTML',
+        ...extra,
+      }),
+    });
+    const data = await res.json();
+    if (!data.ok) {
+      console.warn('[telegram] sendPhoto failed:', data.description);
+      return false;
+    }
+    return true;
+  } catch (e) {
+    console.warn('[telegram] sendPhoto error:', e.message);
+    return false;
+  }
+}
+
+/**
  * Приветственное сообщение при /start — с кнопкой открытия мини-аппа.
  */
 export async function sendWelcome(chatId) {
