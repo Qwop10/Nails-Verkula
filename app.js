@@ -163,6 +163,7 @@ document.addEventListener('DOMContentLoaded', () => {
   renderCal();
   initPhoneMask();
   schedRender();
+  initServicesAdmin();
 });
 
 function updateProfileUI(name, username) {
@@ -444,6 +445,128 @@ function pickAdminAddon(el, label, price) {
 
 function updateAdminTotal() {
   setText('admin-total', fmt(adminMain.price + adminAddon.price));
+}
+
+// ── Services admin (add / delete) ────────────────────────────
+const TRASH_SVG = '<svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M1.5 3h10M4.5 3V2a.5.5 0 0 1 .5-.5h3a.5.5 0 0 1 .5.5v1M4.5 5.5v4M8.5 5.5v4M2.5 3l.6 7a.5.5 0 0 0 .5.5h5.8a.5.5 0 0 0 .5-.5l.6-7"/></svg>';
+
+let _delBtn = null;
+
+function initServicesAdmin() {
+  // Добавляем кнопки удаления ко всем существующим строкам
+  document.querySelectorAll('#tab-services .svc-row').forEach(row => _appendDelBtn(row));
+
+  // Вставляем форму добавления после секций Основные и Дополнительные
+  const pcs = Array.from(document.querySelectorAll('#tab-services .pc'))
+    .filter(pc => pc.querySelector('.svc-toggle'));
+
+  ['main', 'addon'].forEach((type, i) => {
+    if (!pcs[i]) return;
+    const wrapper = document.createElement('div');
+    wrapper.className = 'svc-add-wrapper';
+    wrapper.innerHTML =
+      '<div id="add-svc-form-' + type + '" class="svc-add-form">' +
+        '<input class="inp" id="add-svc-name-' + type + '" placeholder="Название услуги" style="font-size:13px">' +
+        '<div style="display:flex;gap:8px;align-items:center">' +
+          '<input class="inp" id="add-svc-price-' + type + '" type="number" placeholder="Цена" style="width:100px;font-size:13px">' +
+          '<span style="font-size:12px;color:#b09050">₽</span>' +
+        '</div>' +
+        '<div style="display:flex;gap:8px">' +
+          '<button onclick="addSvcConfirm(\'' + type + '\')" style="flex:1;background:#c9a84c;color:#fff;border:none;border-radius:8px;padding:8px;font-size:12px;cursor:pointer;font-family:\'Inter\',sans-serif">Добавить</button>' +
+          '<button onclick="addSvcCancel(\'' + type + '\')" style="background:none;border:.5px solid #d4b878;border-radius:8px;padding:8px 14px;font-size:12px;color:#b09050;cursor:pointer;font-family:\'Inter\',sans-serif">Отмена</button>' +
+        '</div>' +
+      '</div>' +
+      '<button class="svc-add-btn" onclick="addSvcShow(\'' + type + '\')">+ Добавить услугу</button>';
+    pcs[i].insertAdjacentElement('afterend', wrapper);
+  });
+}
+
+function _appendDelBtn(row) {
+  if (row.querySelector('.svc-del-btn')) return;
+  const btn = document.createElement('button');
+  btn.className = 'svc-del-btn';
+  btn.innerHTML = TRASH_SVG;
+  btn.addEventListener('click', function (e) {
+    e.stopPropagation();
+    _svcDeleteStep(btn, row);
+  });
+  row.appendChild(btn);
+}
+
+function _svcDeleteStep(btn, row) {
+  // Сброс предыдущей кнопки если нажали другую
+  if (_delBtn && _delBtn !== btn) _svcReset(_delBtn);
+
+  const step = parseInt(btn.dataset.step || '0');
+  if (step === 0) {
+    btn.dataset.step = '1';
+    btn.classList.add('warn');
+    btn.textContent = 'Удалить?';
+    _delBtn = btn;
+  } else if (step === 1) {
+    btn.dataset.step = '2';
+    btn.classList.remove('warn');
+    btn.classList.add('danger');
+    btn.textContent = 'Да, удалить';
+  } else {
+    // Анимация исчезновения, потом удаление из DOM
+    row.style.transition = 'opacity .22s, max-height .28s, padding .28s';
+    row.style.overflow = 'hidden';
+    row.style.maxHeight = row.offsetHeight + 'px';
+    requestAnimationFrame(() => {
+      row.style.opacity = '0';
+      row.style.maxHeight = '0';
+      row.style.paddingTop = '0';
+      row.style.paddingBottom = '0';
+    });
+    setTimeout(() => row.remove(), 300);
+    _delBtn = null;
+  }
+}
+
+function _svcReset(btn) {
+  if (!btn) return;
+  btn.dataset.step = '0';
+  btn.classList.remove('warn', 'danger');
+  btn.innerHTML = TRASH_SVG;
+  _delBtn = null;
+}
+
+// Клик в стороне — сброс состояния удаления
+document.addEventListener('click', () => { if (_delBtn) _svcReset(_delBtn); });
+
+function addSvcShow(type) {
+  document.getElementById('add-svc-form-' + type).style.display = 'flex';
+}
+function addSvcCancel(type) {
+  document.getElementById('add-svc-form-' + type).style.display = 'none';
+}
+function addSvcConfirm(type) {
+  const nameInp  = document.getElementById('add-svc-name-' + type);
+  const priceInp = document.getElementById('add-svc-price-' + type);
+  const name  = nameInp ? nameInp.value.trim() : '';
+  const price = priceInp ? parseInt(priceInp.value) || 0 : 0;
+  if (!name) { if (nameInp) nameInp.focus(); return; }
+
+  const pcs = Array.from(document.querySelectorAll('#tab-services .pc'))
+    .filter(pc => pc.querySelector('.svc-toggle'));
+  const pc = type === 'main' ? pcs[0] : pcs[1];
+  if (!pc) return;
+
+  const row = document.createElement('div');
+  row.className = 'svc-row';
+  row.innerHTML =
+    '<div style="flex:1">' +
+      '<div class="pn">' + name + '</div>' +
+      (price ? '<div style="display:flex;align-items:center;gap:8px;margin-top:4px"><input class="inp" value="' + price + '" type="number" style="width:90px;padding:6px 10px;font-size:13px"> <span style="font-size:12px;color:#b09050">₽</span></div>' : '') +
+    '</div>' +
+    '<div class="svc-toggle on" onclick="this.classList.toggle(\'on\')"></div>';
+  _appendDelBtn(row);
+  pc.appendChild(row);
+
+  nameInp.value = '';
+  if (priceInp) priceInp.value = '';
+  addSvcCancel(type);
 }
 
 // ── Admin tabs ────────────────────────────────────────────────

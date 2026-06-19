@@ -125,6 +125,16 @@ html,body{
 .sched-day-tab.on{background:#c9a84c;color:#fff;border-color:#c9a84c}
 .sched-day-tab.off{background:#f5f0e8;color:#d4b878;border-color:#f0e8d0}
 
+/* Service delete button */
+.svc-del-btn{background:none;border:.5px solid #e8d8f0;border-radius:7px;padding:5px 7px;cursor:pointer;color:#c4a8c0;transition:.18s;flex-shrink:0;margin-left:8px;display:flex;align-items:center;justify-content:center;font-size:11px;font-family:'Inter',sans-serif;min-width:28px}
+.svc-del-btn.warn{background:#fff8e8;border-color:#d09010;color:#a06800;white-space:nowrap;padding:5px 10px}
+.svc-del-btn.danger{background:#e04040;border-color:#e04040;color:#fff;white-space:nowrap;padding:5px 10px}
+/* Service add button & form */
+.svc-add-wrapper{margin-bottom:10px}
+.svc-add-btn{width:100%;padding:10px;border:.5px dashed #c9a84c;border-radius:10px;background:none;color:#c9a84c;font-size:12px;font-family:'Inter',sans-serif;cursor:pointer;transition:.15s}
+.svc-add-btn:hover{background:#fdf8ee}
+.svc-add-form{display:none;flex-direction:column;gap:8px;padding:12px;background:#fdf8ee;border:.5px solid #c9a84c;border-radius:10px;margin-bottom:8px}
+
 /* Admin service picker (inside edit modal) */
 .svc-picker{display:none;flex-direction:column;gap:4px;margin-top:6px;margin-bottom:4px;padding:6px;background:#fdf8ee;border-radius:10px;border:.5px solid #f0d888}
 .svc-picker.open{display:flex}
