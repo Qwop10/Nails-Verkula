@@ -2,23 +2,25 @@
 function initPhoneMask() {
   const inp = document.getElementById('inp-phone');
   if (!inp) return;
-  inp.addEventListener('input', e => {
+
+  function applyMask() {
     let digits = inp.value.replace(/\D/g, '');
     if (digits.startsWith('8')) digits = '7' + digits.slice(1);
-    if (!digits.startsWith('7')) digits = '7' + digits;
+    if (digits.length > 0 && !digits.startsWith('7')) digits = '7' + digits;
     digits = digits.slice(0, 11);
+    if (!digits) { inp.value = ''; return; }
     let out = '+7';
     if (digits.length > 1) out += ' (' + digits.slice(1, 4);
-    if (digits.length >= 4) out += ') ' + digits.slice(4, 7);
-    if (digits.length >= 7) out += '-' + digits.slice(7, 9);
-    if (digits.length >= 9) out += '-' + digits.slice(9, 11);
+    if (digits.length > 4) out += ') ' + digits.slice(4, 7);
+    if (digits.length > 7) out += '-' + digits.slice(7, 9);
+    if (digits.length > 9) out += '-' + digits.slice(9, 11);
     inp.value = out;
-  });
+  }
+
+  inp.addEventListener('input', applyMask);
+  inp.addEventListener('focus', () => { if (!inp.value) inp.value = '+7'; });
   inp.addEventListener('keydown', e => {
-    if (e.key === 'Backspace' && inp.value === '+7') e.preventDefault();
-  });
-  inp.addEventListener('focus', () => {
-    if (!inp.value) inp.value = '+7';
+    if (e.key === 'Backspace' && (inp.value === '+7' || inp.value === '')) e.preventDefault();
   });
 }
 
@@ -349,4 +351,33 @@ function pickAdminAddon(el, label, price) {
 
 function updateAdminTotal() {
   setText('admin-total', fmt(adminMain.price + adminAddon.price));
+}
+
+// ── Admin tabs ────────────────────────────────────────────────
+const ADMIN_TABS = ['tab-requests', 'tab-services', 'tab-report', 'tab-profile'];
+
+function switchAdminTab(idx) {
+  ADMIN_TABS.forEach((id, i) => {
+    const tab = document.getElementById(id);
+    const nav = document.getElementById('admin-nav-' + i);
+    if (tab) tab.classList.toggle('active', i === idx);
+    if (nav) nav.classList.toggle('on', i === idx);
+  });
+}
+
+// ── Report period ─────────────────────────────────────────────
+const REPORT_DATA = {
+  day:   { revenue: '0 ₽',     visits: '0',  avg: '—' },
+  week:  { revenue: '0 ₽',     visits: '0',  avg: '—' },
+  month: { revenue: '0 ₽',     visits: '0',  avg: '—' },
+  year:  { revenue: '0 ₽',     visits: '0',  avg: '—' },
+};
+
+function setPeriod(btn, period) {
+  document.querySelectorAll('.period-btn').forEach(b => b.classList.remove('on'));
+  btn.classList.add('on');
+  const d = REPORT_DATA[period];
+  setText('rep-revenue', d.revenue);
+  setText('rep-visits',  d.visits);
+  setText('rep-avg',     d.avg);
 }

@@ -432,66 +432,239 @@
      SCREEN 9: ПАНЕЛЬ МАСТЕРА
      ═══════════════════════════════════ -->
 <div class="screen" id="s9">
-  <div class="ah">
+  <div class="ah" style="flex-shrink:0">
     <div style="display:flex;justify-content:space-between;align-items:center">
       <div><div class="ah-t">Панель мастера</div><div class="ah-s">Verkula</div></div>
-      <div style="display:flex;align-items:center;gap:8px">
-        <span class="bdg-admin">Мастер</span>
-        <div class="nrow">
-          <svg width="12" height="16" viewBox="0 0 9 13"><rect x="1" y="4" width="7" height="8" rx="3.5" fill="#f5ead0"/><rect x="2" y="1" width="5" height="5" rx="2.5" fill="#b8922a"/></svg>
-          <svg width="14" height="20" viewBox="0 0 11 16"><rect x="1" y="5" width="9" height="10" rx="4.5" fill="#c9a84c"/><rect x="2" y="1" width="7" height="6" rx="3.5" fill="#9a7020"/></svg>
-          <svg width="12" height="16" viewBox="0 0 9 13"><rect x="1" y="4" width="7" height="8" rx="3.5" fill="#f5ead0"/><rect x="2" y="1" width="5" height="5" rx="2.5" fill="#b8922a"/></svg>
+      <span class="bdg-admin">Мастер</span>
+    </div>
+  </div>
+
+  <!-- ── ВКЛАДКА: ЗАЯВКИ ── -->
+  <div class="admin-tab-content active" id="tab-requests">
+    <div class="sc">
+      <div style="display:flex;gap:8px;margin-bottom:14px">
+        <div class="stat-card"><div class="stat-l">Записей</div><div class="stat-v">4</div></div>
+        <div class="stat-card"><div class="stat-l">Новых заявок</div><div class="stat-v">1</div></div>
+        <div class="stat-card"><div class="stat-l">Выручка</div><div class="stat-v" style="font-size:15px">—</div></div>
+      </div>
+      <div class="st">Заявки на рассмотрении</div>
+      <div class="req-card">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+          <span style="font-size:14px;font-weight:500;color:#1a1208">Клиент #1</span>
+          <span class="bdg bdg-p">На рассмотрении</span>
+        </div>
+        <div style="font-size:12px;color:#b09050;margin-bottom:3px">Дата · Комб. маникюр + Дизайн</div>
+        <div style="font-size:11px;color:#c4a870;font-style:italic;margin-bottom:5px">«Пожелания клиента»</div>
+        <div style="font-size:12px;color:#c9a84c;font-weight:500;margin-bottom:3px">@username · телефон</div>
+        <div style="font-size:12px;color:#b09050;margin-bottom:10px">Итого: 1 800 ₽ · бронь ещё не оплачена</div>
+        <div style="display:flex;gap:6px;margin-bottom:8px">
+          <button class="btn btn-outline btn-sm" style="flex:1" onclick="openModal('edit-modal')">✏️ Изменить</button>
+          <button class="btn btn-outline btn-sm" style="flex:1">✕ Отклонить</button>
+        </div>
+        <button class="btn btn-dark btn-sm">✓ Одобрить и отправить на оплату</button>
+      </div>
+      <div class="st">Расписание <span style="font-weight:400;text-transform:none;letter-spacing:0;font-size:10px;color:#c4a870">— нажмите чтобы вкл/выкл</span></div>
+      <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px" id="admin-slots">
+        <div class="slot slot-on" onclick="toggleSlot(this)">10:00</div>
+        <div class="slot slot-on" onclick="toggleSlot(this)">12:00</div>
+        <div class="slot slot-off" onclick="toggleSlot(this)">14:00</div>
+        <div class="slot slot-off" onclick="toggleSlot(this)">15:30</div>
+        <div class="slot slot-off" onclick="toggleSlot(this)">17:00</div>
+        <div class="slot slot-off" onclick="addSlot()" style="border-style:dashed">+ слот</div>
+      </div>
+      <div class="st">Рабочие дни <span style="font-weight:400;text-transform:none;letter-spacing:0;font-size:10px;color:#c4a870">— нажмите чтобы вкл/выкл</span></div>
+      <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:20px" id="admin-days">
+        <div class="slot slot-on" onclick="toggleSlot(this)">Пн</div>
+        <div class="slot slot-on" onclick="toggleSlot(this)">Вт</div>
+        <div class="slot slot-on" onclick="toggleSlot(this)">Ср</div>
+        <div class="slot slot-on" onclick="toggleSlot(this)">Чт</div>
+        <div class="slot slot-on" onclick="toggleSlot(this)">Пт</div>
+        <div class="slot slot-off" onclick="toggleSlot(this)">Сб</div>
+        <div class="slot slot-off" onclick="toggleSlot(this)">Вс</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── ВКЛАДКА: УСЛУГИ ── -->
+  <div class="admin-tab-content" id="tab-services">
+    <div class="sc">
+      <div class="st" style="margin-top:4px">Основные услуги</div>
+      <div class="pc" style="margin-bottom:10px">
+        <div class="svc-row">
+          <div style="flex:1">
+            <div class="pn">Комбинированный маникюр</div>
+            <div style="display:flex;align-items:center;gap:8px;margin-top:4px">
+              <input class="inp" value="1500" type="number" style="width:90px;padding:6px 10px;font-size:13px" onchange="updateSvcPrice(this)"/> <span style="font-size:12px;color:#b09050">₽</span>
+            </div>
+          </div>
+          <div class="svc-toggle on" onclick="this.classList.toggle('on')" title="Показывать клиентам"></div>
+        </div>
+        <div class="svc-row">
+          <div style="flex:1">
+            <div class="pn">Гелевое покрытие с укреплением</div>
+            <div style="display:flex;align-items:center;gap:8px;margin-top:4px">
+              <input class="inp" value="3500" type="number" style="width:90px;padding:6px 10px;font-size:13px" onchange="updateSvcPrice(this)"/> <span style="font-size:12px;color:#b09050">₽</span>
+            </div>
+          </div>
+          <div class="svc-toggle on" onclick="this.classList.toggle('on')"></div>
+        </div>
+        <div class="svc-row">
+          <div style="flex:1">
+            <div class="pn">Наращивание (1–3 длина)</div>
+            <div style="display:flex;align-items:center;gap:8px;margin-top:4px">
+              <input class="inp" value="4000" type="number" style="width:90px;padding:6px 10px;font-size:13px" onchange="updateSvcPrice(this)"/> <span style="font-size:12px;color:#b09050">₽</span>
+            </div>
+          </div>
+          <div class="svc-toggle on" onclick="this.classList.toggle('on')"></div>
+        </div>
+        <div class="svc-row">
+          <div style="flex:1">
+            <div class="pn">Наращивание (4–6 длина)</div>
+            <div style="display:flex;align-items:center;gap:8px;margin-top:4px">
+              <input class="inp" value="4500" type="number" style="width:90px;padding:6px 10px;font-size:13px" onchange="updateSvcPrice(this)"/> <span style="font-size:12px;color:#b09050">₽</span>
+            </div>
+          </div>
+          <div class="svc-toggle on" onclick="this.classList.toggle('on')"></div>
+        </div>
+      </div>
+
+      <div class="st">Дополнительные услуги</div>
+      <div class="pc" style="margin-bottom:10px">
+        <div class="svc-row">
+          <div style="flex:1">
+            <div class="pn">Дизайн</div>
+            <div style="display:flex;align-items:center;gap:8px;margin-top:4px">
+              <input class="inp" value="300" type="number" style="width:90px;padding:6px 10px;font-size:13px"/> <span style="font-size:12px;color:#b09050">₽</span>
+            </div>
+          </div>
+          <div class="svc-toggle on" onclick="this.classList.toggle('on')"></div>
+        </div>
+        <div class="svc-row">
+          <div style="flex:1">
+            <div class="pn">Покрытие гель-лаком</div>
+            <div style="display:flex;align-items:center;gap:8px;margin-top:4px">
+              <input class="inp" value="300" type="number" style="width:90px;padding:6px 10px;font-size:13px"/> <span style="font-size:12px;color:#b09050">₽</span>
+            </div>
+          </div>
+          <div class="svc-toggle on" onclick="this.classList.toggle('on')"></div>
+        </div>
+        <div class="svc-row">
+          <div style="flex:1">
+            <div class="pn">Снятие чужой работы</div>
+            <div style="display:flex;align-items:center;gap:8px;margin-top:4px">
+              <input class="inp" value="300" type="number" style="width:90px;padding:6px 10px;font-size:13px"/> <span style="font-size:12px;color:#b09050">₽</span>
+            </div>
+          </div>
+          <div class="svc-toggle on" onclick="this.classList.toggle('on')"></div>
+        </div>
+        <div class="svc-row">
+          <div style="flex:1">
+            <div class="pn">Ремонт / поднятие / коррекция</div>
+            <div class="pf" style="margin-top:2px">входит в стоимость</div>
+          </div>
+          <div class="svc-toggle on" onclick="this.classList.toggle('on')"></div>
+        </div>
+      </div>
+
+      <div class="st">Бронь</div>
+      <div class="pc" style="margin-bottom:20px">
+        <div class="svc-row">
+          <div style="flex:1">
+            <div class="pn">Сумма бронирования</div>
+            <div style="display:flex;align-items:center;gap:8px;margin-top:4px">
+              <input class="inp" value="500" type="number" style="width:90px;padding:6px 10px;font-size:13px"/> <span style="font-size:12px;color:#b09050">₽</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div style="padding:10px 16px 12px;background:#fdf8ee;border-top:.5px solid #f0d888;flex-shrink:0">
+      <button class="btn btn-primary">Сохранить изменения</button>
+    </div>
+  </div>
+
+  <!-- ── ВКЛАДКА: ОТЧЁТ ── -->
+  <div class="admin-tab-content" id="tab-report">
+    <div class="period-bar">
+      <button class="period-btn" onclick="setPeriod(this,'day')">День</button>
+      <button class="period-btn on" onclick="setPeriod(this,'week')">Неделя</button>
+      <button class="period-btn" onclick="setPeriod(this,'month')">Месяц</button>
+      <button class="period-btn" onclick="setPeriod(this,'year')">Год</button>
+    </div>
+    <div class="sc">
+      <div style="display:flex;gap:8px;margin-bottom:14px;margin-top:4px">
+        <div class="stat-card" style="text-align:center">
+          <div class="stat-l">Выручка</div>
+          <div class="stat-v" id="rep-revenue">—</div>
+        </div>
+        <div class="stat-card" style="text-align:center">
+          <div class="stat-l">Визитов</div>
+          <div class="stat-v" id="rep-visits">—</div>
+        </div>
+        <div class="stat-card" style="text-align:center">
+          <div class="stat-l">Ср. чек</div>
+          <div class="stat-v" id="rep-avg">—</div>
+        </div>
+      </div>
+
+      <div class="st">Популярные услуги</div>
+      <div class="pc" style="margin-bottom:12px">
+        <div class="svc-row" style="padding:8px 0">
+          <div style="flex:1">
+            <div style="font-size:12px;color:#1a1208">Комбинированный маникюр</div>
+          </div>
+          <div style="text-align:right">
+            <div style="font-size:12px;font-weight:500;color:#c9a84c">—</div>
+            <div style="font-size:10px;color:#b09050">записей</div>
+          </div>
+        </div>
+        <div class="svc-row" style="padding:8px 0">
+          <div style="flex:1"><div style="font-size:12px;color:#1a1208">Гелевое покрытие</div></div>
+          <div style="text-align:right">
+            <div style="font-size:12px;font-weight:500;color:#c9a84c">—</div>
+            <div style="font-size:10px;color:#b09050">записей</div>
+          </div>
+        </div>
+        <div class="svc-row" style="padding:8px 0">
+          <div style="flex:1"><div style="font-size:12px;color:#1a1208">Наращивание</div></div>
+          <div style="text-align:right">
+            <div style="font-size:12px;font-weight:500;color:#c9a84c">—</div>
+            <div style="font-size:10px;color:#b09050">записей</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="st">История визитов</div>
+      <div class="pc" style="margin-bottom:20px">
+        <div style="text-align:center;font-size:12px;color:#b09050;padding:12px 0">
+          История появится после первых завершённых записей
         </div>
       </div>
     </div>
   </div>
-  <div class="sc">
-    <div style="display:flex;gap:8px;margin-bottom:14px">
-      <div class="stat-card"><div class="stat-l">Записей</div><div class="stat-v">4</div></div>
-      <div class="stat-card"><div class="stat-l">Новых заявок</div><div class="stat-v">3</div></div>
-      <div class="stat-card"><div class="stat-l">Выручка</div><div class="stat-v" style="font-size:15px">7 200₽</div></div>
-    </div>
-    <div class="st">Заявки на рассмотрении</div>
-    <div class="req-card">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
-        <span style="font-size:14px;font-weight:500;color:#1a1208">Клиент #1</span>
-        <span class="bdg bdg-p">На рассмотрении</span>
+
+  <!-- ── ВКЛАДКА: ПРОФИЛЬ ── -->
+  <div class="admin-tab-content" id="tab-profile">
+    <div class="sc" style="padding-top:20px">
+      <div style="text-align:center;margin-bottom:20px">
+        <div class="avatar" style="margin:0 auto 10px">V</div>
+        <div style="font-family:'Playfair Display',serif;font-size:18px;color:#1a1208">Verkula</div>
+        <div style="font-size:12px;color:#b09050;margin-top:4px">Мастер ногтевого сервиса</div>
       </div>
-      <div style="font-size:12px;color:#b09050;margin-bottom:3px">Дата · Комб. маникюр + Дизайн</div>
-      <div style="font-size:11px;color:#c4a870;font-style:italic;margin-bottom:5px">«Пожелания клиента»</div>
-      <div style="font-size:12px;color:#c9a84c;font-weight:500;margin-bottom:3px">@username · телефон</div>
-      <div style="font-size:12px;color:#b09050;margin-bottom:10px">Итого: 1 800 ₽ · бронь ещё не оплачена</div>
-      <div style="display:flex;gap:6px;margin-bottom:8px">
-        <button class="btn btn-outline btn-sm" style="flex:1" onclick="openModal('edit-modal')">✏️ Изменить</button>
-        <button class="btn btn-outline btn-sm" style="flex:1">✕ Отклонить</button>
+      <div class="st">Настройки</div>
+      <div class="pc" style="margin-bottom:12px">
+        <div class="svc-row"><span class="bl">Уведомления о заявках</span><div class="svc-toggle on" onclick="this.classList.toggle('on')"></div></div>
+        <div class="svc-row"><span class="bl">Напоминания клиентам</span><div class="svc-toggle on" onclick="this.classList.toggle('on')"></div></div>
+        <div class="svc-row"><span class="bl">Автоодобрение</span><div class="svc-toggle" onclick="this.classList.toggle('on')"></div></div>
       </div>
-      <button class="btn btn-dark btn-sm">✓ Одобрить и отправить на оплату</button>
-    </div>
-    <div class="st">Расписание <span style="font-weight:400;text-transform:none;letter-spacing:0;font-size:10px;color:#c4a870">— нажмите чтобы включить/выключить</span></div>
-    <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px" id="admin-slots">
-      <div class="slot slot-on" onclick="toggleSlot(this)">10:00</div>
-      <div class="slot slot-on" onclick="toggleSlot(this)">12:00</div>
-      <div class="slot slot-off" onclick="toggleSlot(this)">14:00</div>
-      <div class="slot slot-off" onclick="toggleSlot(this)">15:30</div>
-      <div class="slot slot-off" onclick="toggleSlot(this)">17:00</div>
-      <div class="slot slot-off" onclick="addSlot()" style="border-style:dashed">+ слот</div>
-    </div>
-    <div class="st">Рабочие дни <span style="font-weight:400;text-transform:none;letter-spacing:0;font-size:10px;color:#c4a870">— нажмите чтобы включить/выключить</span></div>
-    <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:20px" id="admin-days">
-      <div class="slot slot-on" onclick="toggleSlot(this)">Пн</div>
-      <div class="slot slot-on" onclick="toggleSlot(this)">Вт</div>
-      <div class="slot slot-on" onclick="toggleSlot(this)">Ср</div>
-      <div class="slot slot-on" onclick="toggleSlot(this)">Чт</div>
-      <div class="slot slot-on" onclick="toggleSlot(this)">Пт</div>
-      <div class="slot slot-off" onclick="toggleSlot(this)">Сб</div>
-      <div class="slot slot-off" onclick="toggleSlot(this)">Вс</div>
     </div>
   </div>
+
   <div class="bn">
-    <button class="ni on"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>Заявки</button>
-    <button class="ni"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>Услуги</button>
-    <button class="ni"><svg viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>Отчёт</button>
-    <button class="ni"><svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>Профиль</button>
+    <button class="ni on" id="admin-nav-0" onclick="switchAdminTab(0)"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>Заявки</button>
+    <button class="ni" id="admin-nav-1" onclick="switchAdminTab(1)"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>Услуги</button>
+    <button class="ni" id="admin-nav-2" onclick="switchAdminTab(2)"><svg viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>Отчёт</button>
+    <button class="ni" id="admin-nav-3" onclick="switchAdminTab(3)"><svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>Профиль</button>
   </div>
 
   <!-- Edit modal -->
