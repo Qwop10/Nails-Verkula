@@ -7,7 +7,7 @@
 import express from 'express';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
-import { nailServiceLabels } from '../shared/domain.js';
+import { nailServiceLabels, nailServiceLabel } from '../shared/domain.js';
 import { initStorage, getStorageDir } from './storage.mjs';
 import {
   sendMessage,
@@ -235,6 +235,32 @@ app.get('/api/admin/requests', auth, requireMaster, async (_req, res) => {
   catch (e) { console.error(e); res.status(500).json({ success: false, error: 'server_error' }); }
 });
 
+// Отчёт за период (день/неделя/месяц/год).
+app.get('/api/admin/report', auth, requireMaster, async (req, res) => {
+  try {
+    const period = ['day', 'week', 'month', 'year'].includes(req.query.period) ? req.query.period : 'week';
+    const r = await db.getReport(period);
+    ok(res, {
+      revenue: r.revenue,
+      visits: r.visits,
+      avg: r.avg,
+      popular: r.popular.map((p) => ({ label: nailServiceLabel(p.mainId), count: p.count })),
+    });
+  } catch (e) { console.error(e); res.status(500).json({ success: false, error: 'server_error' }); }
+});
+
+// Сообщение клиенту от мастера (приходит пушем в Telegram).
+app.post('/api/admin/requests/:id/message', auth, requireMaster, async (req, res) => {
+  try {
+    const text = (req.body?.text || '').trim();
+    if (!text) return res.status(400).json({ success: false, error: 'empty' });
+    const r = await db.getRequest(req.params.id);
+    if (!r) return res.status(404).json({ success: false, error: 'not_found' });
+    const sent = await sendMessage(r.clientId, `💬 <b>Сообщение от мастера</b>\n${escapeHtml(text)}\n\n<i>Ответьте на это сообщение здесь, в чате.</i>`);
+    ok(res, { sent });
+  } catch (e) { console.error(e); res.status(500).json({ success: false, error: 'server_error' }); }
+});
+
 app.get('/api/admin/stats', auth, requireMaster, async (_req, res) => {
   try {
     const all = await db.getAllRequests();
@@ -325,7 +351,21 @@ app.post('/api/tg/webhook', (req, res) => {
   res.sendStatus(200);
   const msg = req.body?.message;
   const text = typeof msg?.text === 'string' ? msg.text.trim() : '';
-  if (msg?.chat?.id && /^\/start(@\w+)?$/.test(text)) sendWelcome(msg.chat.id).catch(() => {});
+  const fromId = msg?.from?.id;
+  if (!msg?.chat?.id || !text) return;
+
+  if (/^\/start(@\w+)?$/.test(text)) {
+    sendWelcome(msg.chat.id).catch(() => {});
+    return;
+  }
+  // Любое другое сообщение от клиента (не мастера) → пересылаем мастеру.
+  if (fromId && !isMaster(fromId)) {
+    const who = msg.from.first_name || msg.from.username || fromId;
+    const tag = msg.from.username ? ` (@${msg.from.username})` : '';
+    for (const mid of MASTER_IDS) {
+      sendMessage(mid, `💬 <b>Ответ клиента</b> ${escapeHtml(String(who))}${escapeHtml(tag)}:\n${escapeHtml(text)}`).catch(() => {});
+    }
+  }
 });
 
 // ============================ STATIC ============================

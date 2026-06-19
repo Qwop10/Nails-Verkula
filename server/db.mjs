@@ -154,6 +154,40 @@ export async function removeScheduleSlot(day, time) {
   );
 }
 
+/** Отчёт за период: выручка/визиты/средний чек/популярные услуги.
+ *  Считаются подтверждённые записи (оплаченная бронь) по дате визита. */
+export async function getReport(period) {
+  const days = { day: 1, week: 7, month: 30, year: 365 }[period] || 7;
+  const start = new Date();
+  start.setHours(0, 0, 0, 0);
+  start.setDate(start.getDate() - (days - 1));
+  const startIso = start.toISOString().slice(0, 10);
+
+  const { rows: agg } = await pool.query(
+    `SELECT COALESCE(SUM(total),0)::int AS revenue, COUNT(*)::int AS visits
+       FROM requests
+      WHERE status = 'confirmed' AND req_date >= $1`,
+    [startIso]
+  );
+  const revenue = agg[0].revenue;
+  const visits = agg[0].visits;
+
+  const { rows: pop } = await pool.query(
+    `SELECT main_id, COUNT(*)::int AS count
+       FROM requests
+      WHERE status = 'confirmed' AND req_date >= $1 AND main_id IS NOT NULL
+      GROUP BY main_id ORDER BY count DESC LIMIT 5`,
+    [startIso]
+  );
+
+  return {
+    revenue,
+    visits,
+    avg: visits ? Math.round(revenue / visits) : 0,
+    popular: pop.map((p) => ({ mainId: p.main_id, count: p.count })),
+  };
+}
+
 /** Доступные слоты на конкретную дату (с учётом расписания и уже занятых). */
 export async function getDayAvailability(dateIso) {
   const dow = DOW_KEYS[new Date(dateIso + 'T00:00:00').getDay()];

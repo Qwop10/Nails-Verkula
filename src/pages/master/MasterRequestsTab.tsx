@@ -14,6 +14,7 @@ import {
   getStats,
   approveRequest,
   rejectRequest,
+  sendClientMessage,
   serviceLabels,
   requestTotal,
   allSlots,
@@ -27,6 +28,9 @@ export const MasterRequestsTab: React.FC = () => {
   const notify = useNotification();
   const [reloadKey, setReloadKey] = useState(0);
   const [editTarget, setEditTarget] = useState<MasterRequest | null>(null);
+  const [msgTarget, setMsgTarget] = useState<MasterRequest | null>(null);
+  const [msgText, setMsgText] = useState('');
+  const [sending, setSending] = useState(false);
   const reload = () => setReloadKey((k) => k + 1);
 
   const reqFetcher = useCallback(() => getMasterRequests(), [reloadKey]);
@@ -48,9 +52,20 @@ export const MasterRequestsTab: React.FC = () => {
     notify.info('Заявка отклонена');
     reload();
   };
-  const handleMessage = (r: MasterRequest) => {
-    // TODO(backend): открыть чат бота с клиентом (tg id).
-    notify.info(`Написать клиенту: ${r.clientName}`);
+  const openMessage = (r: MasterRequest) => { setMsgText(''); setMsgTarget(r); };
+  const handleSendMessage = async () => {
+    if (!msgTarget || !msgText.trim()) return;
+    setSending(true);
+    try {
+      await sendClientMessage(msgTarget.id, msgText.trim());
+      notify.success('Сообщение отправлено клиенту');
+      setMsgTarget(null);
+      setMsgText('');
+    } catch {
+      notify.error('Не удалось отправить сообщение');
+    } finally {
+      setSending(false);
+    }
   };
 
   return (
@@ -104,7 +119,7 @@ export const MasterRequestsTab: React.FC = () => {
           <div className="flex gap-2 mb-2">
             <Button variant="secondary" size="sm" onClick={() => setEditTarget(r)} className="flex-1">Изменить</Button>
             <Button variant="ghost" size="sm" onClick={() => handleReject(r)} className="flex-1">Отклонить</Button>
-            <Button variant="secondary" size="sm" onClick={() => handleMessage(r)} className="flex-1">Написать</Button>
+            <Button variant="secondary" size="sm" onClick={() => openMessage(r)} className="flex-1">Написать</Button>
           </div>
           <Button variant="primary" size="sm" fullWidth onClick={() => handleApprove(r)}>
             Одобрить и отправить на оплату
@@ -115,16 +130,23 @@ export const MasterRequestsTab: React.FC = () => {
       <p className="text-[11px] uppercase tracking-wider text-muted mb-2 mt-2">Одобренные</p>
       {approved.length === 0 && <p className="text-xs text-hint mb-3">Пока нет.</p>}
       {approved.map((r) => (
-        <div key={r.id} className="rounded-card bg-card border border-line p-3 mb-2 opacity-90">
+        <div key={r.id} className="rounded-card bg-card border border-line p-3 mb-2">
           <div className="flex items-center justify-between">
             <span className="text-sm font-medium text-fg">{r.clientName}</span>
             <span className="text-[11px] font-medium px-2 py-0.5 rounded-full text-brand-dark bg-brand/15">
               {r.bookingPaid ? '✓ Бронь оплачена' : 'Ожидает оплаты'}
             </span>
           </div>
-          <p className="text-xs text-muted">
+          <p className="text-xs text-muted mt-0.5">
             {prettyDate(r.date)} · {r.time} · {serviceLabels(r).join(' + ')}
           </p>
+          <div className="flex items-center justify-between mt-2">
+            <span className="text-xs text-muted">{r.bookingPaid ? 'Заработано за услугу' : 'К оплате'}</span>
+            <span className="text-sm font-semibold text-brand">{fmt(requestTotal(r))}</span>
+          </div>
+          <Button variant="secondary" size="sm" fullWidth className="mt-2" onClick={() => openMessage(r)}>
+            Написать клиенту
+          </Button>
         </div>
       ))}
 
@@ -142,6 +164,45 @@ export const MasterRequestsTab: React.FC = () => {
             reload();
           }}
         />
+      )}
+
+      {/* Окно «Написать клиенту» */}
+      {msgTarget && (
+        <div
+          className="fixed inset-0 z-50 flex items-end justify-center bg-black/40"
+          onClick={() => !sending && setMsgTarget(null)}
+        >
+          <div
+            className="w-full max-w-md bg-card rounded-t-2xl p-5 pb-6"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="w-9 h-1 rounded-full bg-line mx-auto mb-4" />
+            <h2 className="font-serif text-lg text-fg mb-0.5">Сообщение клиенту</h2>
+            <p className="text-xs text-muted mb-3">{msgTarget.clientName} · придёт пушем в Telegram</p>
+            <textarea
+              autoFocus
+              rows={4}
+              value={msgText}
+              maxLength={500}
+              onChange={(e) => setMsgText(e.target.value)}
+              placeholder="Напишите сообщение…"
+              className="w-full bg-card border border-line rounded-card px-4 py-3 text-sm text-fg placeholder-hint outline-none focus:border-brand resize-none mb-3"
+            />
+            <div className="flex gap-2">
+              <Button variant="ghost" size="md" onClick={() => setMsgTarget(null)} className="flex-1">Отмена</Button>
+              <Button
+                variant="primary"
+                size="md"
+                isLoading={sending}
+                disabled={!msgText.trim()}
+                onClick={handleSendMessage}
+                className="flex-1"
+              >
+                Отправить →
+              </Button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

@@ -155,20 +155,23 @@ export async function setBookingFee(fee: number): Promise<void> {
 export async function getReport(period: ReportPeriod): Promise<{
   revenue: number; visits: number; avg: number; popular: { label: string; count: number }[];
 }> {
-  await delay(150);
-  void period;
-  // Реальная статистика появится с серверным эндпоинтом отчётов.
-  // Пока показываем нули — без выдуманных данных, но со списком услуг.
-  return {
-    revenue: 0,
-    visits: 0,
-    avg: 0,
-    popular: [
-      { label: 'Комбинированный маникюр', count: 0 },
-      { label: 'Гелевое покрытие', count: 0 },
-      { label: 'Наращивание', count: 0 },
-    ],
-  };
+  const r = await api.get<{ revenue: number; visits: number; avg: number; popular: { label: string; count: number }[] }>(
+    `/api/admin/report?period=${period}`
+  );
+  // Если за период ещё нет записей — показываем базовый список услуг с нулями.
+  const popular = r.popular.length
+    ? r.popular
+    : [
+        { label: 'Комбинированный маникюр', count: 0 },
+        { label: 'Гелевое покрытие с укреплением', count: 0 },
+        { label: 'Наращивание (1–3 длина)', count: 0 },
+      ];
+  return { revenue: r.revenue, visits: r.visits, avg: r.avg, popular };
+}
+
+/** Отправить клиенту сообщение от мастера (придёт пушем в Telegram). */
+export async function sendClientMessage(requestId: string, text: string): Promise<void> {
+  await api.post(`/api/admin/requests/${requestId}/message`, { text });
 }
 
 export async function getSettings(): Promise<MasterSettings> {
