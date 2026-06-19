@@ -21,6 +21,7 @@ interface ClientLayoutProps {
 
 const TABS: { path: string; label: string; icon: IconName }[] = [
   { path: '/', label: 'Главная', icon: 'home' },
+  { path: '/catalog', label: 'Услуги', icon: 'search' },
   { path: '/profile', label: 'Профиль', icon: 'user' },
 ];
 
@@ -34,9 +35,7 @@ export const ClientLayout: React.FC<ClientLayoutProps> = ({ children }) => {
     if (step >= 0) setCurrentStep(step);
   }, [pathname, setCurrentStep]);
 
-  const isHome = pathname === '/';
-  const isProfile = pathname === '/profile';
-  const showTabBar = isHome || isProfile;
+  const showTabBar = TABS.some((t) => t.path === pathname);
 
   const bg = getBackgroundProps();
 

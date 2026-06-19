@@ -14,9 +14,16 @@ export type IconName =
   | 'needle'
   | 'layers'
   | 'edit'
-  | 'chat';
+  | 'chat'
+  | 'search';
 
 const PATHS: Record<IconName, React.ReactNode> = {
+  search: (
+    <>
+      <circle cx="10" cy="10" r="7" />
+      <path d="M21 21l-4.35-4.35" />
+    </>
+  ),
   home: (
     <>
       <path d="M3.5 11.5 12 4l8.5 7.5" />
