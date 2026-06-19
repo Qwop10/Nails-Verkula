@@ -21,6 +21,11 @@ export function createDemoProvider() {
       };
     },
 
+    async refund({ paymentId, amount }) {
+      // Демо: реального списания не было — «возвращаем» мгновенно.
+      return { id: 'demo_refund', status: 'succeeded', paymentId, amount };
+    },
+
     parseWebhook(body) {
       const obj = body?.object || {};
       return {

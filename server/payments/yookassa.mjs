@@ -51,6 +51,28 @@ export function createYooKassaProvider({ shopId, secret }) {
     },
 
     /**
+     * Автоматический возврат брони (refunds API).
+     * @returns {Promise<{id:string,status:string}>}
+     */
+    async refund({ paymentId, amount }) {
+      const res = await fetch(`${API}/refunds`, {
+        method: 'POST',
+        headers: {
+          Authorization: authHeader,
+          'Idempotence-Key': crypto.randomUUID(),
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          payment_id: String(paymentId),
+          amount: { value: Number(amount).toFixed(2), currency: 'RUB' },
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(`yookassa refund: ${data?.description || res.status}`);
+      return { id: data.id, status: data.status };
+    },
+
+    /**
      * Разбирает входящий вебхук ЮKassa.
      * @returns {{requestId:string|null,status:string,paymentId:string}|null}
      */

@@ -192,12 +192,35 @@ app.post('/api/requests/:id/cancel', auth, async (req, res) => {
     const refundable = hoursLeft >= REFUND_HOURS;
 
     const updated = await db.setStatus(req.params.id, 'cancelled');
-    // TODO(ЮKassa): при refundable && bookingPaid — вызвать возврат платежа (refunds API).
-    for (const mid of MASTER_IDS) {
-      sendMessage(mid, `❌ Отмена записи: ${escapeHtml(r.clientName)} · ${prettyDate(r.date)} ${r.time}` +
-        (r.bookingPaid ? (refundable ? ' · бронь к возврату' : ' · бронь не возвращается') : ''));
+
+    // Автоматический возврат брони, если отмена вовремя и бронь была оплачена.
+    let refunded = false;
+    if (refundable && r.bookingPaid && r.paymentId) {
+      try {
+        const result = await getPaymentProvider().refund({ paymentId: r.paymentId, amount: r.bookingFee });
+        refunded = result.status === 'succeeded' || result.status === 'pending';
+      } catch (e) {
+        console.error('refund error:', e.message);
+        // Возврат не прошёл автоматически — уведомим мастера сделать вручную.
+      }
     }
-    ok(res, { ...updated, refunded: refundable && r.bookingPaid });
+
+    for (const mid of MASTER_IDS) {
+      const tail = r.bookingPaid
+        ? refunded
+          ? ' · бронь возвращена автоматически ✅'
+          : refundable
+          ? ' · ⚠️ возврат не прошёл — вернуть вручную'
+          : ' · бронь не возвращается (отмена поздно)'
+        : '';
+      sendMessage(mid, `❌ Отмена записи: ${escapeHtml(r.clientName)} · ${prettyDate(r.date)} ${r.time}${tail}`);
+    }
+    // Клиенту — подтверждение возврата.
+    if (refunded) {
+      sendMessage(r.clientId, `↩️ Запись отменена. Бронь ${fmtRu(r.bookingFee)} возвращается на карту в течение нескольких дней.`);
+    }
+
+    ok(res, { ...updated, refunded });
   } catch (e) { console.error(e); res.status(500).json({ success: false, error: 'server_error' }); }
 });
 
