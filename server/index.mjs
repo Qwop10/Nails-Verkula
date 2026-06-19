@@ -335,7 +335,7 @@ app.post('/api/admin/requests/:id/reject', auth, requireMaster, async (req, res)
   try {
     const r = await db.setStatus(req.params.id, 'rejected', ['pending_review', 'payment_pending']);
     if (!r) return res.status(409).json({ success: false, error: 'bad_status' });
-    await sendMessage(r.clientId, `К сожалению, мастер не может принять эту заявку. Попробуйте выбрать другое время.`);
+    await sendMessage(r.clientId, `К сожалению, мастер не может принять вашу заявку.`);
     ok(res, r);
   } catch (e) { console.error(e); res.status(500).json({ success: false, error: 'server_error' }); }
 });
