@@ -95,7 +95,7 @@
   </div>
 
   <div class="sc">
-    <div class="st" style="margin-top:4px">Основные — выбрать 1</div>
+    <div class="st" style="margin-top:4px;display:none">Основные — выбрать 1</div>
     <div class="pc sel" onclick="selectMain(this,'Комбинированный маникюр',1500)">
       <div style="display:flex;align-items:center;gap:10px">
         <div style="flex:1"><div class="pn">Комбинированный маникюр</div><div class="pp">1 500 ₽</div></div>
@@ -121,7 +121,7 @@
       </div>
     </div>
 
-    <div class="st">Дополнительно — выбрать 1</div>
+    <div class="st" style="display:none">Дополнительно — выбрать 1</div>
     <div class="pc sel" onclick="selectAddon(this,'Дизайн',300)">
       <div style="display:flex;align-items:center;gap:10px">
         <div style="flex:1"><div class="pn">Дизайн</div><div class="pp">300 ₽</div></div>
@@ -148,7 +148,7 @@
     </div>
 
     <div class="st">Пожелания</div>
-    <textarea class="inp" id="wishes-input" rows="2" maxlength="150" placeholder="Длина, дизайн, пожелания мастеру…" style="resize:none;margin-bottom:12px"></textarea>
+    <textarea class="inp" id="wishes-input" rows="2" maxlength="100" placeholder="Длина, дизайн, пожелания мастеру…" style="resize:none;margin-bottom:12px"></textarea>
 
     <div style="background:#fdf8ee;border-radius:10px;padding:10px 12px;margin-bottom:16px">
       <div style="display:flex;justify-content:space-between;font-size:12px">
@@ -254,7 +254,7 @@
     </div>
     <div style="width:100%;background:#fff;border:.5px solid #f0d888;border-radius:12px;padding:12px 14px;margin-bottom:14px">
       <div class="brow"><span class="bl">Статус</span><span class="bv" style="color:#c9a84c;font-weight:500">На рассмотрении</span></div>
-      <div class="brow"><span class="bl">Пожелания</span><span class="bv" id="s4-wishes">—</span></div>
+      <div class="brow brow-col"><span class="bl">Пожелания</span><span class="bv bv-wishes" id="s4-wishes">—</span></div>
       <div class="brow"><span class="bl">Связь</span><span class="bv" id="s4-tg">—</span></div>
     </div>
     <button class="btn btn-outline" onclick="goTo('s7')">Посмотреть мои заявки</button>
