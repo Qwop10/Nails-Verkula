@@ -143,6 +143,8 @@ export const DateTimeSelect: React.FC = () => {
             const dIso = iso(year, month, d);
             const past = isPast(d);
             const selected = date === dIso;
+            const dow = new Date(year, month, d).getDay();
+            const weekend = dow === 0 || dow === 6; // Сб/Вс
             return (
               <button
                 key={d}
@@ -153,6 +155,8 @@ export const DateTimeSelect: React.FC = () => {
                     ? 'bg-brand text-[color:rgb(var(--brand-contrast))]'
                     : past
                     ? 'text-hint/50'
+                    : weekend
+                    ? 'text-hint hover:bg-brand/10'
                     : 'text-fg hover:bg-brand/10'
                 }`}
               >
