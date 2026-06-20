@@ -20,6 +20,7 @@ export interface MasterRequest {
   wishes?: string;
   bookingPaid: boolean;
   masterNote?: string;
+  photos?: string[];
 }
 
 export interface ScheduleDay { key: string; label: string; working: boolean; slots: string[]; }
@@ -43,7 +44,7 @@ interface ServerRequest {
   id: string; clientId: string; clientName: string; clientPhone: string;
   status: RequestStatus; mainId: string | null; addonIds: string[];
   date: string | null; time: string | null; wishes?: string;
-  bookingPaid: boolean; masterNote?: string;
+  bookingPaid: boolean; masterNote?: string; photos?: string[];
 }
 
 function toMasterRequest(r: ServerRequest): MasterRequest {
@@ -60,6 +61,7 @@ function toMasterRequest(r: ServerRequest): MasterRequest {
     wishes: r.wishes,
     bookingPaid: r.bookingPaid,
     masterNote: r.masterNote,
+    photos: r.photos || [],
   };
 }
 

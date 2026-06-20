@@ -155,6 +155,15 @@ export const MasterRequestsTab: React.FC = () => {
             {prettyDate(r.date)} · {r.time} · {serviceLabels(r).join(' + ')}
           </p>
           {r.wishes && <p className="text-xs text-hint italic mt-0.5">«{r.wishes}»</p>}
+          {r.photos && r.photos.length > 0 && (
+            <div className="flex gap-2 mt-2">
+              {r.photos.map((src, i) => (
+                <a key={i} href={src} target="_blank" rel="noreferrer" className="w-14 h-14 rounded-tile overflow-hidden border border-line block">
+                  <img src={src} alt={`фото ${i + 1}`} className="w-full h-full object-cover" />
+                </a>
+              ))}
+            </div>
+          )}
           <p className="text-xs text-brand-dark mt-1">{r.clientPhone}</p>
           <p className="text-xs text-muted mt-0.5 mb-3">Итого: {fmt(requestTotal(r))} · бронь не оплачена</p>
 

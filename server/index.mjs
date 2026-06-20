@@ -8,7 +8,7 @@ import express from 'express';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import { nailServiceLabels, nailServiceLabel } from '../shared/domain.js';
-import { initStorage, getStorageDir } from './storage.mjs';
+import { initStorage, getStorageDir, saveDataUrl } from './storage.mjs';
 import {
   sendMessage,
   sendPhoto,
@@ -30,7 +30,7 @@ const BOOKING_FEE = Number(process.env.BOOKING_FEE) || 500;
 const REFUND_HOURS = 24;
 
 const app = express();
-app.use(express.json({ limit: '1mb' }));
+app.use(express.json({ limit: '8mb' })); // с запасом под фото-референсы (data URL)
 
 const labelsOf = (r) => nailServiceLabels(r.mainId, r.addonIds).join(' + ') || 'услуга';
 const fmtRu = (n) => `${Number(n).toLocaleString('ru-RU')} ₽`;
@@ -157,9 +157,18 @@ app.post('/api/requests', auth, async (req, res) => {
       return res.status(400).json({ success: false, error: 'no_contact' });
     }
 
+    // Фото-референсы (data URL) → сохраняем файлами, максимум 3.
+    const rawPhotos = Array.isArray(b.photos) ? b.photos.slice(0, 3) : [];
+    const photos = [];
+    for (const p of rawPhotos) {
+      const path = await saveDataUrl(p, 'ref');
+      if (path) photos.push(path);
+    }
+
     const r = await db.createRequest({
       id: newId(), clientId, clientName, clientPhone,
       mainId, addonIds, wishes: b.wishes || '', date: b.date, time: b.time, bookingFee: BOOKING_FEE,
+      photos,
     });
     await db.upsertClient({ id: clientId, name: clientName, phone: clientPhone });
 
@@ -167,6 +176,7 @@ app.post('/api/requests', auth, async (req, res) => {
     const note =
       `🆕 <b>Новая заявка</b>\n${mention}\n${prettyDate(r.date)} · ${r.time} · ${labelsOf(r)}` +
       (r.wishes ? `\n«${escapeHtml(r.wishes)}»` : '') +
+      (photos.length ? `\n📷 фото: ${photos.length}` : '') +
       `\nИтого: ${fmtRu(r.total)} · ${escapeHtml(clientPhone)}`;
     for (const mid of MASTER_IDS) sendMessage(mid, note);
 

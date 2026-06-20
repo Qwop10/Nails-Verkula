@@ -48,6 +48,8 @@ export async function initSchema() {
   // Флаги отправленных напоминаний (за 24 часа и за 2 часа до записи).
   await pool.query(`ALTER TABLE requests ADD COLUMN IF NOT EXISTS reminded BOOLEAN NOT NULL DEFAULT false;`);
   await pool.query(`ALTER TABLE requests ADD COLUMN IF NOT EXISTS reminded2h BOOLEAN NOT NULL DEFAULT false;`);
+  // Фото-референсы клиента (пути /uploads/...), до 3 шт.
+  await pool.query(`ALTER TABLE requests ADD COLUMN IF NOT EXISTS photos JSONB NOT NULL DEFAULT '[]'::jsonb;`);
 
   // Чат: переписка клиента и мастера.
   await pool.query(`
@@ -108,6 +110,7 @@ function rowToRequest(r) {
     masterNote: r.master_note || undefined,
     bookingPaid: r.booking_paid,
     paymentId: r.payment_id || undefined,
+    photos: r.photos || [],
     createdAt: r.created_at,
     updatedAt: r.updated_at,
   };
@@ -282,13 +285,14 @@ export async function createRequest(o) {
   const { rows } = await pool.query(
     `INSERT INTO requests
        (id, client_id, client_name, client_phone, main_id, addon_ids,
-        req_date, req_time, wishes, total, booking_fee, status)
-     VALUES ($1,$2,$3,$4,$5,$6::jsonb,$7,$8,$9,$10,$11,'pending_review')
+        req_date, req_time, wishes, total, booking_fee, status, photos)
+     VALUES ($1,$2,$3,$4,$5,$6::jsonb,$7,$8,$9,$10,$11,'pending_review',$12::jsonb)
      RETURNING *`,
     [
       o.id, String(o.clientId), o.clientName || '', o.clientPhone || '',
       o.mainId || null, JSON.stringify(o.addonIds || []),
       o.date || null, o.time || null, o.wishes || '', total, o.bookingFee ?? 500,
+      JSON.stringify(o.photos || []),
     ]
   );
   return rowToRequest(rows[0]);

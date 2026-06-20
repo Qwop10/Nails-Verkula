@@ -14,11 +14,13 @@ interface BookingState {
   mainId: string | null;
   addonIds: string[];
   wishes: string;
+  photos: string[]; // data URL, до 3 фото-референсов
   // Дата/время
   date: string | null; // 'YYYY-MM-DD'
   time: string | null; // 'HH:MM'
 
   setClient: (name: string, phone: string) => void;
+  setPhotos: (photos: string[]) => void;
   setMain: (id: string | null) => void;
   toggleAddon: (id: string) => void;
   setAddonSingle: (id: string) => void;
@@ -43,6 +45,7 @@ const initial = {
   mainId: null as string | null,
   addonIds: [] as string[],
   wishes: '',
+  photos: [] as string[],
   date: null as string | null,
   time: null as string | null,
 };
@@ -52,6 +55,7 @@ const bookingOnly = {
   mainId: null as string | null,
   addonIds: [] as string[],
   wishes: '',
+  photos: [] as string[],
   date: null as string | null,
   time: null as string | null,
 };
@@ -84,6 +88,7 @@ export const useBookingStore = create<BookingState>((set, get) => ({
     return clientName.trim().length >= 2 && clientPhone.replace(/\D/g, '').length === 11;
   },
 
+  setPhotos: (photos) => set({ photos }),
   setWishes: (wishes) => set({ wishes }),
   setDate: (date) => set({ date, time: null }), // смена даты сбрасывает время
   setTime: (time) => set({ time }),

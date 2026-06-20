@@ -64,6 +64,7 @@ export interface CreateRequestPayload {
   wishes: string;
   date: string;
   time: string;
+  photos?: string[]; // data URL, до 3 фото
 }
 
 /** Создать заявку (статус pending_review). Бросает Error с .code при ошибке (напр. 'limit'). */

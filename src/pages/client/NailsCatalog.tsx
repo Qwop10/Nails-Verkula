@@ -19,10 +19,35 @@ import {
 
 const fmt = (n: number) => `${n.toLocaleString('ru-RU')} ₽`;
 
+/** Сжимает изображение в JPEG data URL (≈1000px, q0.7) — чтобы не раздувать запрос. */
+function compressImage(file: File, maxSize = 1000, quality = 0.7): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const img = new Image();
+      img.onload = () => {
+        const scale = Math.min(1, maxSize / Math.max(img.width, img.height));
+        const w = Math.round(img.width * scale);
+        const h = Math.round(img.height * scale);
+        const canvas = document.createElement('canvas');
+        canvas.width = w; canvas.height = h;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return reject(new Error('no ctx'));
+        ctx.drawImage(img, 0, 0, w, h);
+        resolve(canvas.toDataURL('image/jpeg', quality));
+      };
+      img.onerror = reject;
+      img.src = reader.result as string;
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
 export const NailsCatalog: React.FC = () => {
   const { navigate } = useNav();
   const notify = useNotification();
-  const { mainId, addonIds, wishes, setMain, setAddonSingle, setWishes, total, hasSelection } =
+  const { mainId, addonIds, wishes, photos, setMain, setAddonSingle, setWishes, setPhotos, total, hasSelection } =
     useBookingStore();
 
   // Сводка выбора: «Комб. маникюр + Дизайн — 1 800 ₽»
@@ -46,6 +71,20 @@ export const NailsCatalog: React.FC = () => {
     selectionHaptic();
     navigate(CLIENT_ROUTES.DATETIME);
   };
+
+  const onAddPhotos = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    e.target.value = ''; // позволяем выбрать тот же файл снова
+    const free = 3 - photos.length;
+    if (free <= 0) { notify.error('Можно прикрепить максимум 3 фото'); return; }
+    try {
+      const added = await Promise.all(files.slice(0, free).map((f) => compressImage(f)));
+      setPhotos([...photos, ...added]);
+    } catch {
+      notify.error('Не удалось добавить фото');
+    }
+  };
+  const removePhoto = (i: number) => setPhotos(photos.filter((_, idx) => idx !== i));
 
   const Row = ({ s, selected }: { s: NailService; selected: boolean }) => (
     <button
@@ -128,6 +167,30 @@ export const NailsCatalog: React.FC = () => {
         value={wishes}
         onChange={(e) => setWishes(e.target.value)}
       />
+
+      {/* Фото-референсы (до 3) */}
+      <p className="text-[11px] uppercase tracking-wider text-muted mb-2 mt-3">Фото-референсы (по желанию)</p>
+      <div className="flex gap-2">
+        {photos.map((src, i) => (
+          <div key={i} className="relative w-16 h-16 rounded-tile overflow-hidden border border-line">
+            <img src={src} alt={`фото ${i + 1}`} className="w-full h-full object-cover" />
+            <button
+              onClick={() => removePhoto(i)}
+              className="absolute top-0 right-0 w-5 h-5 bg-black/55 text-white text-xs flex items-center justify-center rounded-bl-md"
+              aria-label="Удалить фото"
+            >
+              ✕
+            </button>
+          </div>
+        ))}
+        {photos.length < 3 && (
+          <label className="w-16 h-16 rounded-tile border border-dashed border-brand/70 flex flex-col items-center justify-center text-brand cursor-pointer hover:bg-brand/5">
+            <span className="text-lg leading-none">＋</span>
+            <span className="text-[9px]">фото</span>
+            <input type="file" accept="image/*" multiple className="hidden" onChange={onAddPhotos} />
+          </label>
+        )}
+      </div>
 
       {summaryText && (
         <div className="mt-3 flex items-center justify-between">

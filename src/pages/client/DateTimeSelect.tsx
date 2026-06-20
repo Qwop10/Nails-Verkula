@@ -29,7 +29,7 @@ export const DateTimeSelect: React.FC = () => {
   const notify = useNotification();
   const {
     date, time, total, hasSelection, setDate, setTime,
-    clientName, clientPhone, mainId, addonIds, wishes,
+    clientName, clientPhone, mainId, addonIds, wishes, photos,
   } = useBookingStore();
   const [submitting, setSubmitting] = useState(false);
   const [slots, setSlots] = useState<string[]>([]);
@@ -103,7 +103,7 @@ export const DateTimeSelect: React.FC = () => {
     }
     setSubmitting(true);
     try {
-      await createRequest({ clientName, clientPhone, mainId, addonIds, wishes, date, time });
+      await createRequest({ clientName, clientPhone, mainId, addonIds, wishes, date, time, photos });
       selectionHaptic();
       navigate(CLIENT_ROUTES.SUBMITTED);
     } catch (e) {
