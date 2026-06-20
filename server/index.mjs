@@ -310,7 +310,7 @@ app.post('/api/admin/requests/:id/approve', auth, requireMaster, async (req, res
       `К оплате бронь ${fmtRu(r.bookingFee)}. Откройте приложение, чтобы оплатить 👇`;
     const keyboard = { reply_markup: { inline_keyboard: [[{ text: '💳 Оплатить бронь', web_app: { url: APP_URL } }]] } };
     // С картинкой; если фото не отправилось — обычным текстом.
-    const photoOk = await sendPhoto(r.clientId, `${APP_URL}/photo/approved.png`, caption, keyboard);
+    const photoOk = await sendPhoto(r.clientId, `${APP_URL}/photo/approved.jpg`, caption, keyboard);
     if (!photoOk) await sendMessage(r.clientId, caption, keyboard);
     ok(res, r);
   } catch (e) { console.error(e); res.status(500).json({ success: false, error: 'server_error' }); }
@@ -340,7 +340,9 @@ app.post('/api/admin/requests/:id/reject', auth, requireMaster, async (req, res)
   try {
     const r = await db.setStatus(req.params.id, 'rejected', ['pending_review', 'payment_pending']);
     if (!r) return res.status(409).json({ success: false, error: 'bad_status' });
-    await sendMessage(r.clientId, `К сожалению, мастер не может принять вашу заявку.`);
+    const rejectText = `К сожалению, мастер не может принять вашу заявку.`;
+    const photoOk = await sendPhoto(r.clientId, `${APP_URL}/photo/rejected.jpg`, rejectText);
+    if (!photoOk) await sendMessage(r.clientId, rejectText);
     ok(res, r);
   } catch (e) { console.error(e); res.status(500).json({ success: false, error: 'server_error' }); }
 });
