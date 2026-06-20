@@ -80,15 +80,31 @@ export const ClientHome: React.FC = () => {
   const phoneSaved = clientPhone.replace(/\D/g, '').length === 11;
   const phoneLocked = phoneSaved && !phoneUnlocked;
 
+  const MONTH_MS = 30 * 24 * 60 * 60 * 1000;
+  const CHANGED_KEY = 'nv_phone_changed_at';
+
   const requestPhoneChange = () => {
-    const msg = 'Изменить номер телефона? После сохранения он снова будет защищён от изменений.';
-    const tg = (window as unknown as { Telegram?: { WebApp?: { showConfirm?: (m: string, cb: (ok: boolean) => void) => void } } }).Telegram?.WebApp;
+    const tg = (window as unknown as { Telegram?: { WebApp?: { showConfirm?: (m: string, cb: (ok: boolean) => void) => void; showAlert?: (m: string) => void } } }).Telegram?.WebApp;
+    let last = 0;
+    try { last = Number(localStorage.getItem(CHANGED_KEY) || '0'); } catch { last = 0; }
+    // Лимит: менять номер можно раз в месяц.
+    if (last && Date.now() - last < MONTH_MS) {
+      const next = new Date(last + MONTH_MS).toLocaleDateString('ru-RU');
+      const m = `Менять номер можно раз в месяц. Следующая смена будет доступна ${next}.`;
+      if (tg?.showAlert) tg.showAlert(m); else window.alert(m);
+      return;
+    }
+    const msg = 'Изменить номер телефона? Сменить его снова можно будет только через месяц.';
     if (tg?.showConfirm) tg.showConfirm(msg, (ok) => { if (ok) setPhoneUnlocked(true); });
     else if (window.confirm(msg)) setPhoneUnlocked(true);
   };
 
   const handleContinue = () => {
     if (!isValid) return;
+    // Если меняли номер — фиксируем дату смены (для лимита «раз в месяц»).
+    if (phoneUnlocked && phone.trim() !== clientPhone.trim()) {
+      try { localStorage.setItem(CHANGED_KEY, String(Date.now())); } catch { /* ignore */ }
+    }
     selectionHaptic();
     setClient(name.trim(), phone.trim());
     navigate(CLIENT_ROUTES.CATALOG);
