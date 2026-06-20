@@ -75,8 +75,17 @@ export const ClientHome: React.FC = () => {
 
   const phoneDigits = phone.replace(/\D/g, '');
   const isValid = name.trim().length >= 2 && phoneDigits.length === 11;
-  // Телефон вводится один раз: если уже сохранён валидный — менять нельзя.
-  const phoneLocked = clientPhone.replace(/\D/g, '').length === 11;
+  // Телефон вводится один раз; сменить можно только после подтверждения.
+  const [phoneUnlocked, setPhoneUnlocked] = useState(false);
+  const phoneSaved = clientPhone.replace(/\D/g, '').length === 11;
+  const phoneLocked = phoneSaved && !phoneUnlocked;
+
+  const requestPhoneChange = () => {
+    const msg = 'Изменить номер телефона? После сохранения он снова будет защищён от изменений.';
+    const tg = (window as unknown as { Telegram?: { WebApp?: { showConfirm?: (m: string, cb: (ok: boolean) => void) => void } } }).Telegram?.WebApp;
+    if (tg?.showConfirm) tg.showConfirm(msg, (ok) => { if (ok) setPhoneUnlocked(true); });
+    else if (window.confirm(msg)) setPhoneUnlocked(true);
+  };
 
   const handleContinue = () => {
     if (!isValid) return;
@@ -151,7 +160,13 @@ export const ClientHome: React.FC = () => {
           )}
         </div>
         {phoneLocked && (
-          <p className="text-[11px] text-hint -mt-1">Номер телефона изменить нельзя</p>
+          <button
+            type="button"
+            onClick={requestPhoneChange}
+            className="self-start text-[11px] text-brand underline -mt-1"
+          >
+            Изменить номер
+          </button>
         )}
       </div>
 
