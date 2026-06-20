@@ -168,8 +168,9 @@ export const NailsCatalog: React.FC = () => {
         onChange={(e) => setWishes(e.target.value)}
       />
 
-      {/* Фото-референсы (до 3) */}
-      <p className="text-[11px] uppercase tracking-wider text-muted mb-2 mt-3">Фото-референсы (по желанию)</p>
+      {/* Фото состояния ногтей (до 3) */}
+      <p className="text-[11px] uppercase tracking-wider text-muted mb-1 mt-3">Фото ваших ногтей (по желанию)</p>
+      <p className="text-[11px] text-hint mb-2">Сфотографируйте ногти, чтобы мастер видел текущее состояние и объём работы.</p>
       <div className="flex gap-2">
         {photos.map((src, i) => (
           <div key={i} className="relative w-16 h-16 rounded-tile overflow-hidden border border-line">
