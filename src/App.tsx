@@ -12,6 +12,7 @@ import { initTelegram, useTelegramTheme } from './services';
 import { getTelegramUser } from './services';
 import { ClientLayout, MasterLayout } from './layouts';
 import { ToastContainer } from './components/ui';
+import { ConsentScreen } from './components/ConsentScreen';
 import { MASTER_TELEGRAM_IDS } from './constants';
 
 type UserRole = 'client' | 'master';
@@ -65,6 +66,9 @@ const App: React.FC = () => {
   const setUserRole = useAppStore((state) => state.setUserRole);
   const setInitialized = useAppStore((state) => state.setInitialized);
   const userRole = useUserRole();
+  const [consented, setConsented] = React.useState<boolean>(() => {
+    try { return localStorage.getItem('nv_consent') === '1'; } catch { return false; }
+  });
 
   useTelegramTheme();
 
@@ -90,6 +94,22 @@ const App: React.FC = () => {
   // Загрузка  инициализация
   if (!userRole) {
     return <div>Loading...</div>;
+  }
+
+  // Гейт согласия на обработку персональных данных — до входа в приложение.
+  if (!consented) {
+    return (
+      <ConsentScreen
+        onAccept={() => {
+          try { localStorage.setItem('nv_consent', '1'); } catch { /* ignore */ }
+          setConsented(true);
+        }}
+        onDecline={() => {
+          const tg = (window as unknown as { Telegram?: { WebApp?: { close?: () => void } } }).Telegram?.WebApp;
+          tg?.close?.();
+        }}
+      />
+    );
   }
 
   return (

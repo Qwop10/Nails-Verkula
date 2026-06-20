@@ -75,6 +75,8 @@ export const ClientHome: React.FC = () => {
 
   const phoneDigits = phone.replace(/\D/g, '');
   const isValid = name.trim().length >= 2 && phoneDigits.length === 11;
+  // Телефон вводится один раз: если уже сохранён валидный — менять нельзя.
+  const phoneLocked = clientPhone.replace(/\D/g, '').length === 11;
 
   const handleContinue = () => {
     if (!isValid) return;
@@ -131,15 +133,26 @@ export const ClientHome: React.FC = () => {
             </svg>
           )}
         </div>
-        <input
-          className={inputCls}
-          placeholder="+7 (___) ___-__-__"
-          value={phone}
-          onChange={(e) => setPhone(formatPhone(e.target.value))}
-          inputMode="tel"
-          autoComplete="tel"
-          maxLength={18}
-        />
+        <div className="relative">
+          <input
+            className={`${inputCls} ${phoneLocked ? 'pr-10 text-muted' : ''}`}
+            placeholder="+7 (___) ___-__-__"
+            value={phone}
+            onChange={(e) => { if (!phoneLocked) setPhone(formatPhone(e.target.value)); }}
+            inputMode="tel"
+            autoComplete="tel"
+            maxLength={18}
+            readOnly={phoneLocked}
+          />
+          {phoneLocked && (
+            <svg style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)' }} width="14" height="14" viewBox="0 0 12 12" fill="none">
+              <polyline points="2,6 5,9 10,3" stroke="#c9a84c" strokeWidth="1.5" strokeLinecap="round" />
+            </svg>
+          )}
+        </div>
+        {phoneLocked && (
+          <p className="text-[11px] text-hint -mt-1">Номер телефона изменить нельзя</p>
+        )}
       </div>
 
       {/* Заметка про бронь */}
