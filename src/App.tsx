@@ -40,25 +40,14 @@ function resolveUserRole(telegramId?: number): UserRole {
   return 'client';
 }
 
-// Client Pages
+// Client Pages (Nails — короткий поток)
 import {
   ClientHome,
   ClientProfile,
-  ServiceSelect,
   NailsCatalog,
   DateTimeSelect,
   RequestSubmitted,
   RequestDetail,
-  ConsultForm,
-  SketchUpload,
-  PlacementSelect,
-  SizeInput,
-  AgeInput,
-  HealthSelect,
-  ExperienceSelect,
-  WishesInput,
-  SuccessScreen,
-  ClientOrderDetails,
 } from './pages/client';
 
 // Master Pages
@@ -124,14 +113,6 @@ const App: React.FC = () => {
                 </ClientLayout>
               }
             />
-            <Route
-              path={CLIENT_ROUTES.SERVICES}
-              element={
-                <ClientLayout>
-                  <ServiceSelect />
-                </ClientLayout>
-              }
-            />
             {/* Nails — короткий поток */}
             <Route
               path={CLIENT_ROUTES.CATALOG}
@@ -162,86 +143,6 @@ const App: React.FC = () => {
               element={
                 <ClientLayout>
                   <RequestDetail />
-                </ClientLayout>
-              }
-            />
-            <Route
-              path={CLIENT_ROUTES.CONSULT}
-              element={
-                <ClientLayout>
-                  <ConsultForm />
-                </ClientLayout>
-              }
-            />
-            <Route
-              path={CLIENT_ROUTES.FORM_SKETCH}
-              element={
-                <ClientLayout>
-                  <SketchUpload />
-                </ClientLayout>
-              }
-            />
-            <Route
-              path={CLIENT_ROUTES.FORM_PLACEMENT}
-              element={
-                <ClientLayout>
-                  <PlacementSelect />
-                </ClientLayout>
-              }
-            />
-            <Route
-              path={CLIENT_ROUTES.FORM_SIZE}
-              element={
-                <ClientLayout>
-                  <SizeInput />
-                </ClientLayout>
-              }
-            />
-            <Route
-              path={CLIENT_ROUTES.FORM_AGE}
-              element={
-                <ClientLayout>
-                  <AgeInput />
-                </ClientLayout>
-              }
-            />
-            <Route
-              path={CLIENT_ROUTES.FORM_HEALTH}
-              element={
-                <ClientLayout>
-                  <HealthSelect />
-                </ClientLayout>
-              }
-            />
-            <Route
-              path={CLIENT_ROUTES.FORM_EXPERIENCE}
-              element={
-                <ClientLayout>
-                  <ExperienceSelect />
-                </ClientLayout>
-              }
-            />
-            <Route
-              path={CLIENT_ROUTES.FORM_WISHES}
-              element={
-                <ClientLayout>
-                  <WishesInput />
-                </ClientLayout>
-              }
-            />
-            <Route
-              path={CLIENT_ROUTES.FORM_SUCCESS}
-              element={
-                <ClientLayout>
-                  <SuccessScreen />
-                </ClientLayout>
-              }
-            />
-            <Route
-              path={CLIENT_ROUTES.ORDER_DETAIL}
-              element={
-                <ClientLayout>
-                  <ClientOrderDetails />
                 </ClientLayout>
               }
             />
