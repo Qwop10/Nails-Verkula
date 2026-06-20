@@ -151,6 +151,10 @@ app.post('/api/requests', auth, async (req, res) => {
     if (!b.date || !b.time) {
       return res.status(400).json({ success: false, error: 'no_datetime' });
     }
+    // Защита от двойной записи: слот уже занят другой активной заявкой.
+    if (await db.isSlotTaken(b.date, b.time)) {
+      return res.status(409).json({ success: false, error: 'slot_taken', message: 'Это время только что заняли. Выберите другое.' });
+    }
     const clientName = (b.clientName || [req.user.first_name, req.user.last_name].filter(Boolean).join(' ')).trim();
     const clientPhone = (b.clientPhone || '').trim();
     if (!clientName || !clientPhone) {

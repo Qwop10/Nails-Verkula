@@ -74,12 +74,13 @@ export async function initSchema() {
   // Засев по умолчанию (только если таблица пустая).
   const { rows } = await pool.query(`SELECT COUNT(*)::int AS c FROM schedule`);
   if (rows[0].c === 0) {
+    const work = ['10:00', '11:00', '12:00', '13:00'];
     const def = [
-      ['mon', true,  ['10:00', '12:00']],
-      ['tue', true,  ['10:00', '12:00']],
-      ['wed', true,  ['10:00', '12:00']],
-      ['thu', true,  ['10:00', '14:00']],
-      ['fri', true,  ['10:00', '12:00', '15:30']],
+      ['mon', true,  work],
+      ['tue', true,  work],
+      ['wed', true,  work],
+      ['thu', true,  work],
+      ['fri', true,  work],
       ['sat', false, []],
       ['sun', false, []],
     ];
@@ -280,6 +281,17 @@ export async function getDayAvailability(dateIso) {
 }
 
 // ── Заявки ────────────────────────────────────────────────────
+/** Занят ли слот (есть активная заявка на эту дату и время). */
+export async function isSlotTaken(date, time) {
+  const { rows } = await pool.query(
+    `SELECT 1 FROM requests
+      WHERE req_date = $1 AND req_time = $2
+        AND status = ANY($3) LIMIT 1`,
+    [date, time, ['pending_review', 'payment_pending', 'confirmed']]
+  );
+  return rows.length > 0;
+}
+
 export async function createRequest(o) {
   const total = nailTotal(o.mainId, o.addonIds || []);
   const { rows } = await pool.query(

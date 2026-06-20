@@ -108,13 +108,23 @@ export const DateTimeSelect: React.FC = () => {
       navigate(CLIENT_ROUTES.SUBMITTED);
     } catch (e) {
       const code = (e as { code?: string }).code;
-      notify.error(
-        code === 'limit'
-          ? 'Достигнут лимит: максимум 3 активные заявки'
-          : code === 'no_contact'
-          ? 'Заполните имя и телефон на первом экране'
-          : 'Не удалось отправить заявку, попробуйте ещё раз'
-      );
+      if (code === 'slot_taken') {
+        notify.error('Это время только что заняли. Выберите другое.');
+        setTime(null);
+        // обновим доступные слоты
+        if (date) getDaySlots(date).then((r) => {
+          setSlots(r.slots || []);
+          setTaken(new Set(r.taken || []));
+        }).catch(() => {});
+      } else {
+        notify.error(
+          code === 'limit'
+            ? 'Достигнут лимит: максимум 3 активные заявки'
+            : code === 'no_contact'
+            ? 'Заполните имя и телефон на первом экране'
+            : 'Не удалось отправить заявку, попробуйте ещё раз'
+        );
+      }
     } finally {
       setSubmitting(false);
     }
