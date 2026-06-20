@@ -154,9 +154,9 @@ export const ClientProfile: React.FC = () => {
               <span className="text-xs text-fg text-right">{r.serviceLabels.join(' + ')}</span>
             </div>
             {r.wishes && (
-              <div className="flex justify-between py-0.5">
+              <div className="py-0.5">
                 <span className="text-xs text-muted">Пожелания</span>
-                <span className="text-xs text-fg text-right">{r.wishes}</span>
+                <p className="text-xs text-fg break-words [overflow-wrap:anywhere] whitespace-pre-wrap mt-0.5">{r.wishes}</p>
               </div>
             )}
             <div className="flex justify-between py-0.5">

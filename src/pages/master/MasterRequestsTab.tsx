@@ -154,7 +154,7 @@ export const MasterRequestsTab: React.FC = () => {
           <p className="text-xs text-muted">
             {prettyDate(r.date)} · {r.time} · {serviceLabels(r).join(' + ')}
           </p>
-          {r.wishes && <p className="text-xs text-hint italic mt-0.5">«{r.wishes}»</p>}
+          {r.wishes && <p className="text-xs text-hint italic mt-0.5 break-words [overflow-wrap:anywhere] whitespace-pre-wrap">«{r.wishes}»</p>}
           {r.photos && r.photos.length > 0 && (
             <div className="flex gap-2 mt-2">
               {r.photos.map((src, i) => (
