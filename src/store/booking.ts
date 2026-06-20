@@ -31,9 +31,24 @@ interface BookingState {
   reset: () => void;
 }
 
+// Сохранённые данные клиента (чтобы авторизоваться один раз).
+const LS_NAME = 'nv_client_name';
+const LS_PHONE = 'nv_client_phone';
+const lsGet = (k: string) => { try { return localStorage.getItem(k) || ''; } catch { return ''; } };
+const lsSet = (k: string, v: string) => { try { localStorage.setItem(k, v); } catch { /* ignore */ } };
+
 const initial = {
-  clientName: '',
-  clientPhone: '',
+  clientName: lsGet(LS_NAME),
+  clientPhone: lsGet(LS_PHONE),
+  mainId: null as string | null,
+  addonIds: [] as string[],
+  wishes: '',
+  date: null as string | null,
+  time: null as string | null,
+};
+
+// Сбрасываем только данные текущей заявки, личность клиента сохраняем.
+const bookingOnly = {
   mainId: null as string | null,
   addonIds: [] as string[],
   wishes: '',
@@ -44,7 +59,11 @@ const initial = {
 export const useBookingStore = create<BookingState>((set, get) => ({
   ...initial,
 
-  setClient: (clientName, clientPhone) => set({ clientName, clientPhone }),
+  setClient: (clientName, clientPhone) => {
+    lsSet(LS_NAME, clientName);
+    lsSet(LS_PHONE, clientPhone);
+    set({ clientName, clientPhone });
+  },
 
   // Повторный клик по выбранной основной — снимает выбор (можно «только доп.»).
   setMain: (id) => set((s) => ({ mainId: s.mainId === id ? null : id })),
@@ -79,5 +98,6 @@ export const useBookingStore = create<BookingState>((set, get) => ({
     return Boolean(mainId) || addonIds.length > 0;
   },
 
-  reset: () => set({ ...initial }),
+  // После отправки заявки сбрасываем выбор, но НЕ разлогиниваем клиента.
+  reset: () => set({ ...bookingOnly }),
 }));

@@ -53,13 +53,20 @@ export const ClientHome: React.FC = () => {
   }, [tgFullName]);
 
   // Автозаполнение из сохранённого профиля (имя/телефон с прошлой записи).
+  // Если профиль полный — сразу «авторизуем» клиента (разблокируем вкладки),
+  // чтобы не вводить данные повторно.
   useEffect(() => {
+    if (clientName && clientPhone) return; // уже авторизован (localStorage)
     let active = true;
     getProfile()
       .then((p) => {
-        if (!active) return;
-        if (p.name && !clientName) setName((cur) => cur || p.name);
-        if (p.phone) setPhone((cur) => cur || formatPhone(p.phone));
+        if (!active || !p.name || !p.phone) return;
+        const formatted = formatPhone(p.phone);
+        setName((cur) => cur || p.name);
+        setPhone((cur) => cur || formatted);
+        if (p.name.trim().length >= 2 && p.phone.replace(/\D/g, '').length === 11) {
+          setClient(p.name, formatted);
+        }
       })
       .catch(() => {});
     return () => { active = false; };
