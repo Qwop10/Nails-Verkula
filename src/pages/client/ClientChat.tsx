@@ -17,7 +17,16 @@ export const ClientChat: React.FC = () => {
   const [sending, setSending] = useState(false);
   const endRef = useRef<HTMLDivElement>(null);
 
-  const load = () => { getMyMessages().then(setMessages).catch(() => {}); };
+  const load = () => {
+    getMyMessages()
+      .then((m) => {
+        setMessages(m);
+        // помечаем переписку прочитанной
+        const maxId = m.reduce((a, x) => Math.max(a, x.id), 0);
+        try { localStorage.setItem('nv_chat_seen', String(maxId)); } catch { /* ignore */ }
+      })
+      .catch(() => {});
+  };
 
   useEffect(() => {
     load();

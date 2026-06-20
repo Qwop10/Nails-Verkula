@@ -5,7 +5,11 @@
  */
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { useAsyncData } from '../../hooks';
-import { getClientMessages, sendToClient, type ChatMessage } from '../../services/chatApi';
+import { getClientMessages, sendToClient, getConversations, type ChatMessage, type Conversation } from '../../services/chatApi';
+
+const SEEN_KEY = 'nv_master_seen';
+const readSeen = (): Record<string, string> => { try { return JSON.parse(localStorage.getItem(SEEN_KEY) || '{}'); } catch { return {}; } };
+const writeSeen = (m: Record<string, string>) => { try { localStorage.setItem(SEEN_KEY, JSON.stringify(m)); } catch { /* ignore */ } };
 import { useNotification } from '../../store';
 import { Button } from '../../components/ui';
 import { EditRequestModal } from '../../components/EditRequestModal';
@@ -32,8 +36,25 @@ export const MasterRequestsTab: React.FC = () => {
   const [msgText, setMsgText] = useState('');
   const [sending, setSending] = useState(false);
   const [chat, setChat] = useState<ChatMessage[]>([]);
+  const [convs, setConvs] = useState<Conversation[]>([]);
+  const [seen, setSeen] = useState<Record<string, string>>(readSeen());
   const chatEndRef = useRef<HTMLDivElement>(null);
   const reload = () => setReloadKey((k) => k + 1);
+
+  // Опрос диалогов — для индикатора непрочитанных на кнопках «Написать».
+  useEffect(() => {
+    let active = true;
+    const load = () => { getConversations().then((c) => { if (active) setConvs(c); }).catch(() => {}); };
+    load();
+    const t = setInterval(load, 10000);
+    return () => { active = false; clearInterval(t); };
+  }, []);
+
+  // Есть ли непрочитанное сообщение от клиента.
+  const isUnread = (clientId: string): boolean => {
+    const c = convs.find((x) => x.clientId === clientId);
+    return !!c && c.lastSender === 'client' && (!seen[clientId] || c.lastAt > seen[clientId]);
+  };
 
   // Загрузка и опрос переписки с выбранным клиентом.
   useEffect(() => {
@@ -67,7 +88,14 @@ export const MasterRequestsTab: React.FC = () => {
     notify.info('Заявка отклонена');
     reload();
   };
-  const openMessage = (r: MasterRequest) => { setMsgText(''); setChat([]); setMsgTarget(r); };
+  const openMessage = (r: MasterRequest) => {
+    setMsgText(''); setChat([]); setMsgTarget(r);
+    // помечаем диалог прочитанным
+    const cid = String(r.clientTgId);
+    const c = convs.find((x) => x.clientId === cid);
+    const next = { ...seen, [cid]: c?.lastAt || new Date().toISOString() };
+    setSeen(next); writeSeen(next);
+  };
   const handleSendMessage = async () => {
     if (!msgTarget || !msgText.trim()) return;
     setSending(true);
@@ -133,7 +161,10 @@ export const MasterRequestsTab: React.FC = () => {
           <div className="flex gap-2 mb-2">
             <Button variant="secondary" size="sm" onClick={() => setEditTarget(r)} className="flex-1">Изменить</Button>
             <Button variant="ghost" size="sm" onClick={() => handleReject(r)} className="flex-1">Отклонить</Button>
-            <Button variant="secondary" size="sm" onClick={() => openMessage(r)} className="flex-1">Написать</Button>
+            <Button variant="secondary" size="sm" onClick={() => openMessage(r)} className="flex-1 relative">
+              Написать
+              {isUnread(String(r.clientTgId)) && <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-red-500" />}
+            </Button>
           </div>
           <Button variant="primary" size="sm" fullWidth onClick={() => handleApprove(r)}>
             Одобрить и отправить на оплату
@@ -158,8 +189,9 @@ export const MasterRequestsTab: React.FC = () => {
             <span className="text-xs text-muted">{r.bookingPaid ? 'Заработано за услугу' : 'К оплате'}</span>
             <span className="text-sm font-semibold text-brand">{fmt(requestTotal(r))}</span>
           </div>
-          <Button variant="secondary" size="sm" fullWidth className="mt-2" onClick={() => openMessage(r)}>
+          <Button variant="secondary" size="sm" fullWidth className="mt-2 relative" onClick={() => openMessage(r)}>
             Написать клиенту
+            {isUnread(String(r.clientTgId)) && <span className="absolute top-1.5 right-2 w-2 h-2 rounded-full bg-red-500" />}
           </Button>
         </div>
       ))}

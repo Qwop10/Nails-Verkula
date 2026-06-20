@@ -457,17 +457,28 @@ app.post('/api/tg/webhook', (req, res) => {
 // Раз в 15 минут шлём напоминание клиентам, у кого запись в ближайшие 24 часа.
 async function runReminders() {
   try {
-    const rows = await db.getConfirmedUnreminded();
+    const rows = await db.getConfirmedForReminders();
     const now = Date.now();
     for (const r of rows) {
       const appt = new Date(`${r.date}T${r.time || '00:00'}:00`).getTime();
       const hoursLeft = (appt - now) / 3_600_000;
-      if (hoursLeft > 0 && hoursLeft <= 24) {
-        const okSent = await sendMessage(
+      if (hoursLeft <= 0) continue;
+
+      // За 24 часа.
+      if (!r.reminded && hoursLeft <= 24) {
+        const sent = await sendMessage(
           r.clientId,
           `🔔 <b>Напоминание о записи</b>\n🗓 ${prettyDate(r.date)} · ${r.time} · ${labelsOf(r)}\nЖдём вас в Nails Verkula 💅`
         );
-        if (okSent) await db.markReminded(r.id);
+        if (sent) await db.markReminded(r.id);
+      }
+      // За 2 часа.
+      if (!r.reminded2h && hoursLeft <= 2) {
+        const sent = await sendMessage(
+          r.clientId,
+          `⏰ <b>Скоро запись!</b>\nЧерез ~2 часа: ${r.time} · ${labelsOf(r)}\nДо встречи в Nails Verkula 💅`
+        );
+        if (sent) await db.markReminded2h(r.id);
       }
     }
   } catch (e) {

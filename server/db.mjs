@@ -45,8 +45,9 @@ export async function initSchema() {
   `);
   await pool.query(`CREATE INDEX IF NOT EXISTS idx_requests_client ON requests(client_id);`);
   await pool.query(`CREATE INDEX IF NOT EXISTS idx_requests_status ON requests(status);`);
-  // Флаг отправленного напоминания (за 24 часа до записи).
+  // Флаги отправленных напоминаний (за 24 часа и за 2 часа до записи).
   await pool.query(`ALTER TABLE requests ADD COLUMN IF NOT EXISTS reminded BOOLEAN NOT NULL DEFAULT false;`);
+  await pool.query(`ALTER TABLE requests ADD COLUMN IF NOT EXISTS reminded2h BOOLEAN NOT NULL DEFAULT false;`);
 
   // Чат: переписка клиента и мастера.
   await pool.query(`
@@ -175,16 +176,20 @@ export async function getConversations() {
 }
 
 // ── Напоминания ───────────────────────────────────────────────
-/** Подтверждённые записи, которым ещё не слали напоминание. */
-export async function getConfirmedUnreminded() {
+/** Подтверждённые будущие записи + флаги отправленных напоминаний. */
+export async function getConfirmedForReminders() {
   const { rows } = await pool.query(
-    `SELECT * FROM requests WHERE status = 'confirmed' AND reminded = false AND req_date IS NOT NULL`
+    `SELECT * FROM requests WHERE status = 'confirmed' AND req_date IS NOT NULL`
   );
-  return rows.map(rowToRequest);
+  return rows.map((r) => ({ ...rowToRequest(r), reminded: r.reminded, reminded2h: r.reminded2h }));
 }
 
 export async function markReminded(id) {
   await pool.query(`UPDATE requests SET reminded = true WHERE id = $1`, [id]);
+}
+
+export async function markReminded2h(id) {
+  await pool.query(`UPDATE requests SET reminded2h = true WHERE id = $1`, [id]);
 }
 
 // ── Расписание ────────────────────────────────────────────────

@@ -3,7 +3,7 @@
  * S7 — Профиль: данные клиента, текущая заявка/запись (по статусу — действия),
  * история посещений. Без верификации и портфолио. Все состояния: loading/empty/error.
  */
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { useNav, useAsyncData } from '../../hooks';
 import { CLIENT_ROUTES } from '../../routes';
 import { useBookingStore, useNotification } from '../../store';
@@ -14,6 +14,7 @@ import {
   withdrawRequest,
   type ClientRequest,
 } from '../../services/requestsApi';
+import { getMyMessages } from '../../services/chatApi';
 import {
   REQUEST_STATUS_LABELS,
   isActiveRequest,
@@ -39,6 +40,24 @@ export const ClientProfile: React.FC = () => {
   const { clientName, clientPhone } = useBookingStore();
   const [reloadKey, setReloadKey] = useState(0);
   const [cancelTarget, setCancelTarget] = useState<ClientRequest | null>(null);
+  const [hasUnread, setHasUnread] = useState(false);
+
+  // Непрочитанные сообщения от мастера (для точки на кнопке чата).
+  useEffect(() => {
+    let active = true;
+    const check = () => {
+      getMyMessages().then((m) => {
+        if (!active) return;
+        const last = m[m.length - 1];
+        let seen = 0;
+        try { seen = Number(localStorage.getItem('nv_chat_seen') || '0'); } catch { seen = 0; }
+        setHasUnread(!!last && last.sender === 'master' && last.id > seen);
+      }).catch(() => {});
+    };
+    check();
+    const t = setInterval(check, 10000);
+    return () => { active = false; clearInterval(t); };
+  }, []);
 
   const fetcher = useCallback(() => getMyRequests(), [reloadKey]);
   const { data, isLoading, error } = useAsyncData<ClientRequest[]>(fetcher, [reloadKey]);
@@ -80,9 +99,12 @@ export const ClientProfile: React.FC = () => {
         onClick={() => navigate(CLIENT_ROUTES.CHAT)}
         className="w-full flex items-center gap-3 rounded-card bg-card border border-line px-4 py-3 mb-4 hover:bg-card-2 transition-colors"
       >
-        <span className="w-9 h-9 rounded-full bg-brand/15 text-brand flex items-center justify-center">💬</span>
+        <span className="relative w-9 h-9 rounded-full bg-brand/15 text-brand flex items-center justify-center">
+          💬
+          {hasUnread && <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-red-500 border border-card" />}
+        </span>
         <div className="text-left flex-1">
-          <div className="text-sm text-fg">Чат с мастером</div>
+          <div className="text-sm text-fg">Чат с мастером{hasUnread && <span className="text-red-500"> • новое</span>}</div>
           <div className="text-[11px] text-muted">Задать вопрос или уточнить детали</div>
         </div>
         <span className="text-brand">›</span>
