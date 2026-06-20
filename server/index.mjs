@@ -500,12 +500,11 @@ async function runReminders() {
   }
 }
 
-// Автоочистка истории чата: сообщения старше N дней удаляются.
-const CHAT_RETENTION_DAYS = Number(process.env.CHAT_RETENTION_DAYS) || 30;
+// Автоочистка истории чата: после того как запись прошла — переписка удаляется.
 async function cleanupChat() {
   try {
-    const n = await db.deleteOldMessages(CHAT_RETENTION_DAYS);
-    if (n) console.log(`[chat] удалено старых сообщений: ${n}`);
+    const n = await db.cleanupFinishedChats();
+    if (n) console.log(`[chat] удалено сообщений (запись прошла): ${n}`);
   } catch (e) {
     console.warn('[chat] cleanup error:', e.message);
   }

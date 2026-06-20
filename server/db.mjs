@@ -159,12 +159,18 @@ export async function getMessages(clientId) {
   return rows.map(rowToMessage);
 }
 
-/** Автоочистка: удалить сообщения старше N дней. Возвращает число удалённых. */
-export async function deleteOldMessages(days = 30) {
-  const { rowCount } = await pool.query(
-    `DELETE FROM messages WHERE created_at < now() - ($1 * interval '1 day')`,
-    [days]
-  );
+/** Автоочистка: удаляет переписку клиентов, у кого нет записи на сегодня/будущее.
+ *  Т.е. после того как запись прошла (req_date < сегодня) — история чата удаляется. */
+export async function cleanupFinishedChats() {
+  const { rowCount } = await pool.query(`
+    DELETE FROM messages m
+     WHERE NOT EXISTS (
+       SELECT 1 FROM requests r
+        WHERE r.client_id = m.client_id
+          AND r.status IN ('pending_review','payment_pending','confirmed')
+          AND r.req_date >= CURRENT_DATE
+     )
+  `);
   return rowCount;
 }
 
