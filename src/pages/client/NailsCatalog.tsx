@@ -163,7 +163,7 @@ export const NailsCatalog: React.FC = () => {
       <textarea
         className="w-full bg-card border border-line rounded-card px-4 py-3 text-sm text-fg placeholder-hint outline-none focus:border-brand transition-colors resize-none"
         rows={2}
-        maxLength={300}
+        maxLength={100}
         placeholder="Нюдовый дизайн, короткая длина…"
         value={wishes}
         onChange={(e) => setWishes(e.target.value)}
