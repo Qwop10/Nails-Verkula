@@ -94,21 +94,6 @@ export const ClientProfile: React.FC = () => {
         {clientPhone && <div className="text-xs text-muted mt-0.5">{clientPhone}</div>}
       </div>
 
-      {/* Чат с мастером */}
-      <button
-        onClick={() => navigate(CLIENT_ROUTES.CHAT)}
-        className="w-full flex items-center gap-3 rounded-card bg-card border border-line px-4 py-3 mb-4 hover:bg-card-2 transition-colors"
-      >
-        <span className="relative w-9 h-9 rounded-full bg-brand/15 text-brand flex items-center justify-center">
-          💬
-          {hasUnread && <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-red-500 border border-card" />}
-        </span>
-        <div className="text-left flex-1">
-          <div className="text-sm text-fg">Чат с мастером{hasUnread && <span className="text-red-500"> • новое</span>}</div>
-          <div className="text-[11px] text-muted">Задать вопрос или уточнить детали</div>
-        </div>
-        <span className="text-brand">›</span>
-      </button>
 
       {/* Текущая заявка/запись */}
       <p className="text-[11px] uppercase tracking-wider text-muted mb-2">Моя заявка</p>
@@ -167,7 +152,17 @@ export const ClientProfile: React.FC = () => {
             </div>
             <div className="font-serif text-lg text-brand mt-1">{fmt(r.total)}</div>
 
-            <div className="mt-3">
+            {/* Чат с мастером — доступен только в рамках заявки */}
+            <button
+              onClick={() => navigate(CLIENT_ROUTES.CHAT)}
+              className="w-full flex items-center gap-2 rounded-tile bg-card-2 border border-line px-3 py-2 mt-3 hover:bg-brand/5 transition-colors"
+            >
+              <span className="relative">💬{hasUnread && <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-red-500" />}</span>
+              <span className="text-sm text-fg flex-1 text-left">Чат с мастером{hasUnread && <span className="text-red-500"> • новое</span>}</span>
+              <span className="text-brand">›</span>
+            </button>
+
+            <div className="mt-2">
               {r.status === 'pending_review' && (
                 <Button variant="ghost" fullWidth onClick={() => handleWithdraw(r)}>
                   Отозвать заявку

@@ -500,6 +500,17 @@ async function runReminders() {
   }
 }
 
+// Автоочистка истории чата: сообщения старше N дней удаляются.
+const CHAT_RETENTION_DAYS = Number(process.env.CHAT_RETENTION_DAYS) || 30;
+async function cleanupChat() {
+  try {
+    const n = await db.deleteOldMessages(CHAT_RETENTION_DAYS);
+    if (n) console.log(`[chat] удалено старых сообщений: ${n}`);
+  } catch (e) {
+    console.warn('[chat] cleanup error:', e.message);
+  }
+}
+
 // ============================ STATIC ============================
 app.use('/uploads', express.static(getStorageDir(), { maxAge: '365d', immutable: true }));
 app.use(express.static(DIST));
@@ -514,6 +525,9 @@ Promise.all([db.initSchema(), initStorage()])
       // Планировщик напоминаний: сразу и далее каждые 15 минут.
       runReminders();
       setInterval(runReminders, 15 * 60 * 1000);
+      // Автоочистка чата: сразу и далее каждые 6 часов.
+      cleanupChat();
+      setInterval(cleanupChat, 6 * 60 * 60 * 1000);
     });
   })
   .catch((e) => {

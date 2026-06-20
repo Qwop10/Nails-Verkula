@@ -159,6 +159,15 @@ export async function getMessages(clientId) {
   return rows.map(rowToMessage);
 }
 
+/** Автоочистка: удалить сообщения старше N дней. Возвращает число удалённых. */
+export async function deleteOldMessages(days = 30) {
+  const { rowCount } = await pool.query(
+    `DELETE FROM messages WHERE created_at < now() - ($1 * interval '1 day')`,
+    [days]
+  );
+  return rowCount;
+}
+
 /** Список диалогов для мастера: клиент + последнее сообщение. */
 export async function getConversations() {
   const { rows } = await pool.query(`
