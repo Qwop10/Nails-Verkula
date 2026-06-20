@@ -8,6 +8,7 @@ import { MasterServicesTab } from './MasterServicesTab';
 import { MasterReportTab } from './MasterReportTab';
 import { MasterProfileTab } from './MasterProfileTab';
 import { BRAND } from '../../config/brand';
+import { useAppStore } from '../../store';
 
 type TabKey = 'requests' | 'services' | 'report' | 'profile';
 
@@ -20,6 +21,7 @@ const TABS: { key: TabKey; label: string; icon: React.ReactNode }[] = [
 
 export const MasterDashboard: React.FC = () => {
   const [tab, setTab] = useState<TabKey>('requests');
+  const setUserRole = useAppStore((s) => s.setUserRole);
 
   return (
     <div className="flex flex-col h-screen surface-gray">
@@ -29,9 +31,12 @@ export const MasterDashboard: React.FC = () => {
           <h1 className="font-serif text-lg text-fg">Панель мастера</h1>
           <p className="text-xs text-muted">{BRAND.name}</p>
         </div>
-        <span className="text-[10px] font-medium px-2 py-0.5 rounded-full border border-brand text-brand">
-          Мастер
-        </span>
+        <button
+          onClick={() => setUserRole('client')}
+          className="text-[11px] font-medium px-3 py-1 rounded-full border border-brand text-brand hover:bg-brand/10 transition-colors"
+        >
+          👁 Как клиент
+        </button>
       </div>
 
       {/* Контент вкладки */}

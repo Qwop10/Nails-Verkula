@@ -8,7 +8,8 @@ import React, { useEffect } from 'react';
 import type { ReactNode } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { getStepFromPath } from '../routes';
-import { useFormStore, useBookingStore, useNotification } from '../store';
+import { useFormStore, useBookingStore, useNotification, useAppStore } from '../store';
+import { MASTER_TELEGRAM_IDS } from '../constants';
 import { getBackgroundProps, isAuroraBackground, hasGrain } from '../config/theme.config';
 import { AuroraBackground } from '../components/AuroraBackground';
 import { GrainOverlay } from '../components/GrainOverlay';
@@ -34,6 +35,10 @@ export const ClientLayout: React.FC<ClientLayoutProps> = ({ children }) => {
   const verified =
     clientName.trim().length >= 2 && clientPhone.replace(/\D/g, '').length === 11;
   const notify = useNotification();
+  const telegramUser = useAppStore((s) => s.telegramUser);
+  const setUserRole = useAppStore((s) => s.setUserRole);
+  // Настоящий мастер, который сейчас смотрит приложение как клиент.
+  const isMasterPreviewing = !!telegramUser && MASTER_TELEGRAM_IDS.includes(telegramUser.id);
 
   useEffect(() => {
     const step = getStepFromPath(pathname);
@@ -102,6 +107,17 @@ export const ClientLayout: React.FC<ClientLayoutProps> = ({ children }) => {
             })}
           </div>
         </nav>
+      )}
+
+      {/* Кнопка возврата в панель мастера (видна только настоящему мастеру) */}
+      {isMasterPreviewing && (
+        <button
+          onClick={() => setUserRole('master')}
+          className="fixed left-1/2 -translate-x-1/2 z-40 flex items-center gap-2 px-4 py-2 rounded-full bg-[#1a1208] text-brand text-xs font-medium shadow-lg border border-brand/40"
+          style={{ bottom: showTabBar ? 76 : 16 }}
+        >
+          👑 Вернуться в панель мастера
+        </button>
       )}
     </div>
   );
