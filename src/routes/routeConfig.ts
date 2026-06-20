@@ -17,6 +17,7 @@ export const CLIENT_ROUTES = {
   DATETIME: '/datetime',
   SUBMITTED: '/submitted',
   REQUEST_DETAIL: '/requests/:id',
+  CHAT: '/chat',
   CONSULT: '/consult',
   FORM_SKETCH: '/form/sketch',
   FORM_PLACEMENT: '/form/placement',

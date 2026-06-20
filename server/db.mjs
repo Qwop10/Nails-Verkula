@@ -48,6 +48,18 @@ export async function initSchema() {
   // Флаг отправленного напоминания (за 24 часа до записи).
   await pool.query(`ALTER TABLE requests ADD COLUMN IF NOT EXISTS reminded BOOLEAN NOT NULL DEFAULT false;`);
 
+  // Чат: переписка клиента и мастера.
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS messages (
+      id          SERIAL PRIMARY KEY,
+      client_id   TEXT NOT NULL,
+      sender      TEXT NOT NULL,            -- 'client' | 'master'
+      text        TEXT NOT NULL,
+      created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
+    );
+  `);
+  await pool.query(`CREATE INDEX IF NOT EXISTS idx_messages_client ON messages(client_id);`);
+
   // Расписание мастера: один ряд на день недели.
   await pool.query(`
     CREATE TABLE IF NOT EXISTS schedule (
@@ -119,6 +131,47 @@ export async function getClient(id) {
   const { rows } = await pool.query(`SELECT id, name, phone FROM clients WHERE id = $1`, [String(id)]);
   const r = rows[0];
   return r ? { id: r.id, name: r.name || '', phone: r.phone || '' } : null;
+}
+
+// ── Чат ───────────────────────────────────────────────────────
+function rowToMessage(r) {
+  return { id: r.id, clientId: r.client_id, sender: r.sender, text: r.text, createdAt: r.created_at };
+}
+
+export async function addMessage(clientId, sender, text) {
+  const { rows } = await pool.query(
+    `INSERT INTO messages (client_id, sender, text) VALUES ($1,$2,$3) RETURNING *`,
+    [String(clientId), sender, text]
+  );
+  return rowToMessage(rows[0]);
+}
+
+export async function getMessages(clientId) {
+  const { rows } = await pool.query(
+    `SELECT * FROM messages WHERE client_id = $1 ORDER BY created_at ASC`,
+    [String(clientId)]
+  );
+  return rows.map(rowToMessage);
+}
+
+/** Список диалогов для мастера: клиент + последнее сообщение. */
+export async function getConversations() {
+  const { rows } = await pool.query(`
+    SELECT m.client_id, c.name, c.phone, m.text AS last_text, m.created_at AS last_at, m.sender AS last_sender
+      FROM messages m
+      JOIN (SELECT client_id, MAX(created_at) AS mx FROM messages GROUP BY client_id) t
+        ON t.client_id = m.client_id AND t.mx = m.created_at
+      LEFT JOIN clients c ON c.id = m.client_id
+     ORDER BY m.created_at DESC
+  `);
+  return rows.map((r) => ({
+    clientId: r.client_id,
+    name: r.name || 'Клиент',
+    phone: r.phone || '',
+    lastText: r.last_text,
+    lastAt: r.last_at,
+    lastSender: r.last_sender,
+  }));
 }
 
 // ── Напоминания ───────────────────────────────────────────────

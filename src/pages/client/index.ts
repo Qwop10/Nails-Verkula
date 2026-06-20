@@ -10,3 +10,4 @@ export { NailsCatalog } from './NailsCatalog';
 export { DateTimeSelect } from './DateTimeSelect';
 export { RequestSubmitted } from './RequestSubmitted';
 export { RequestDetail } from './RequestDetail';
+export { ClientChat } from './ClientChat';

@@ -48,6 +48,7 @@ import {
   DateTimeSelect,
   RequestSubmitted,
   RequestDetail,
+  ClientChat,
 } from './pages/client';
 
 // Master Pages
@@ -143,6 +144,14 @@ const App: React.FC = () => {
               element={
                 <ClientLayout>
                   <RequestDetail />
+                </ClientLayout>
+              }
+            />
+            <Route
+              path={CLIENT_ROUTES.CHAT}
+              element={
+                <ClientLayout>
+                  <ClientChat />
                 </ClientLayout>
               }
             />

@@ -75,6 +75,19 @@ export const ClientProfile: React.FC = () => {
         {clientPhone && <div className="text-xs text-muted mt-0.5">{clientPhone}</div>}
       </div>
 
+      {/* Чат с мастером */}
+      <button
+        onClick={() => navigate(CLIENT_ROUTES.CHAT)}
+        className="w-full flex items-center gap-3 rounded-card bg-card border border-line px-4 py-3 mb-4 hover:bg-card-2 transition-colors"
+      >
+        <span className="w-9 h-9 rounded-full bg-brand/15 text-brand flex items-center justify-center">💬</span>
+        <div className="text-left flex-1">
+          <div className="text-sm text-fg">Чат с мастером</div>
+          <div className="text-[11px] text-muted">Задать вопрос или уточнить детали</div>
+        </div>
+        <span className="text-brand">›</span>
+      </button>
+
       {/* Текущая заявка/запись */}
       <p className="text-[11px] uppercase tracking-wider text-muted mb-2">Моя заявка</p>
 

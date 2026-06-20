@@ -3,8 +3,9 @@
  * Вкладка «Заявки»: статистика, заявки на рассмотрении (одобрить/изменить/отклонить/написать),
  * одобренные, редактор расписания. Состояния loading/empty/error.
  */
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { useAsyncData } from '../../hooks';
+import { getClientMessages, sendToClient, type ChatMessage } from '../../services/chatApi';
 import { useNotification } from '../../store';
 import { Button } from '../../components/ui';
 import { EditRequestModal } from '../../components/EditRequestModal';
@@ -14,7 +15,6 @@ import {
   getStats,
   approveRequest,
   rejectRequest,
-  sendClientMessage,
   serviceLabels,
   requestTotal,
   allSlots,
@@ -31,7 +31,22 @@ export const MasterRequestsTab: React.FC = () => {
   const [msgTarget, setMsgTarget] = useState<MasterRequest | null>(null);
   const [msgText, setMsgText] = useState('');
   const [sending, setSending] = useState(false);
+  const [chat, setChat] = useState<ChatMessage[]>([]);
+  const chatEndRef = useRef<HTMLDivElement>(null);
   const reload = () => setReloadKey((k) => k + 1);
+
+  // Загрузка и опрос переписки с выбранным клиентом.
+  useEffect(() => {
+    if (!msgTarget) return;
+    const cid = String(msgTarget.clientTgId);
+    let active = true;
+    const load = () => { getClientMessages(cid).then((m) => { if (active) setChat(m); }).catch(() => {}); };
+    load();
+    const t = setInterval(load, 4000);
+    return () => { active = false; clearInterval(t); };
+  }, [msgTarget]);
+
+  useEffect(() => { chatEndRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [chat]);
 
   const reqFetcher = useCallback(() => getMasterRequests(), [reloadKey]);
   const statsFetcher = useCallback(() => getStats(), [reloadKey]);
@@ -52,14 +67,13 @@ export const MasterRequestsTab: React.FC = () => {
     notify.info('Заявка отклонена');
     reload();
   };
-  const openMessage = (r: MasterRequest) => { setMsgText(''); setMsgTarget(r); };
+  const openMessage = (r: MasterRequest) => { setMsgText(''); setChat([]); setMsgTarget(r); };
   const handleSendMessage = async () => {
     if (!msgTarget || !msgText.trim()) return;
     setSending(true);
     try {
-      await sendClientMessage(msgTarget.id, msgText.trim());
-      notify.success('Сообщение отправлено клиенту');
-      setMsgTarget(null);
+      const msg = await sendToClient(String(msgTarget.clientTgId), msgText.trim());
+      setChat((c) => [...c, msg]);
       setMsgText('');
     } catch {
       notify.error('Не удалось отправить сообщение');
@@ -166,40 +180,69 @@ export const MasterRequestsTab: React.FC = () => {
         />
       )}
 
-      {/* Окно «Написать клиенту» */}
+      {/* Чат с клиентом */}
       {msgTarget && (
         <div
           className="fixed inset-0 z-50 flex items-end justify-center bg-black/40"
-          onClick={() => !sending && setMsgTarget(null)}
+          onClick={() => setMsgTarget(null)}
         >
           <div
-            className="w-full max-w-md bg-card rounded-t-2xl p-5 pb-6"
+            className="w-full max-w-md bg-card rounded-t-2xl flex flex-col"
+            style={{ height: '80vh' }}
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="w-9 h-1 rounded-full bg-line mx-auto mb-4" />
-            <h2 className="font-serif text-lg text-fg mb-0.5">Сообщение клиенту</h2>
-            <p className="text-xs text-muted mb-3">{msgTarget.clientName} · придёт пушем в Telegram</p>
-            <textarea
-              autoFocus
-              rows={4}
-              value={msgText}
-              maxLength={500}
-              onChange={(e) => setMsgText(e.target.value)}
-              placeholder="Напишите сообщение…"
-              className="w-full bg-card border border-line rounded-card px-4 py-3 text-sm text-fg placeholder-hint outline-none focus:border-brand resize-none mb-3"
-            />
-            <div className="flex gap-2">
-              <Button variant="ghost" size="md" onClick={() => setMsgTarget(null)} className="flex-1">Отмена</Button>
-              <Button
-                variant="primary"
-                size="md"
-                isLoading={sending}
-                disabled={!msgText.trim()}
+            {/* Шапка */}
+            <div className="flex items-center justify-between px-5 py-3 border-b border-line">
+              <div>
+                <h2 className="font-serif text-base text-fg leading-tight">{msgTarget.clientName}</h2>
+                <p className="text-[11px] text-muted">{msgTarget.clientPhone}</p>
+              </div>
+              <button onClick={() => setMsgTarget(null)} className="text-brand text-xl leading-none">✕</button>
+            </div>
+
+            {/* Лента */}
+            <div className="flex-1 overflow-y-auto px-4 py-3 flex flex-col gap-2">
+              {chat.length === 0 && (
+                <p className="text-xs text-hint text-center mt-6">Переписки пока нет. Напишите первым.</p>
+              )}
+              {chat.map((m) => {
+                const mine = m.sender === 'master';
+                return (
+                  <div key={m.id} className={`max-w-[80%] ${mine ? 'self-end' : 'self-start'}`}>
+                    <div className={`px-3 py-2 rounded-2xl text-sm ${
+                      mine
+                        ? 'bg-brand text-[color:rgb(var(--brand-contrast))] rounded-br-sm'
+                        : 'bg-card-2 border border-line text-fg rounded-bl-sm'
+                    }`}>
+                      {m.text}
+                    </div>
+                    <div className={`text-[10px] text-hint mt-0.5 ${mine ? 'text-right' : 'text-left'}`}>
+                      {new Date(m.createdAt).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}
+                    </div>
+                  </div>
+                );
+              })}
+              <div ref={chatEndRef} />
+            </div>
+
+            {/* Ввод */}
+            <div className="flex items-end gap-2 px-4 py-3 border-t border-line">
+              <textarea
+                rows={1}
+                value={msgText}
+                onChange={(e) => setMsgText(e.target.value)}
+                onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSendMessage(); } }}
+                placeholder="Сообщение клиенту…"
+                className="flex-1 bg-card border border-line rounded-2xl px-4 py-2.5 text-sm text-fg placeholder-hint outline-none focus:border-brand resize-none max-h-24"
+              />
+              <button
                 onClick={handleSendMessage}
-                className="flex-1"
+                disabled={!msgText.trim() || sending}
+                className="shrink-0 w-10 h-10 rounded-full bg-brand text-[color:rgb(var(--brand-contrast))] flex items-center justify-center disabled:opacity-40"
+                aria-label="Отправить"
               >
-                Отправить →
-              </Button>
+                ➤
+              </button>
             </div>
           </div>
         </div>

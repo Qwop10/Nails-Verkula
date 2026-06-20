@@ -75,6 +75,31 @@ app.get('/api/profile', auth, async (req, res) => {
   } catch (e) { console.error(e); res.status(500).json({ success: false, error: 'server_error' }); }
 });
 
+// ── Чат: клиент ───────────────────────────────────────────────
+app.get('/api/messages', auth, async (req, res) => {
+  try { ok(res, await db.getMessages(req.user.id)); }
+  catch (e) { console.error(e); res.status(500).json({ success: false, error: 'server_error' }); }
+});
+
+app.post('/api/messages', auth, async (req, res) => {
+  try {
+    const text = (req.body?.text || '').trim();
+    if (!text) return res.status(400).json({ success: false, error: 'empty' });
+    const clientId = String(req.user.id);
+    const msg = await db.addMessage(clientId, 'client', text);
+    // сохраним имя клиента, если есть
+    const name = [req.user.first_name, req.user.last_name].filter(Boolean).join(' ');
+    if (name) await db.upsertClient({ id: clientId, name, phone: '' });
+    // пуш мастеру
+    const who = escapeHtml(name || 'Клиент');
+    for (const mid of MASTER_IDS) {
+      sendMessage(mid, `💬 <b>Сообщение от клиента</b> ${who}:\n${escapeHtml(text)}`,
+        { reply_markup: { inline_keyboard: [[{ text: 'Открыть чат', web_app: { url: APP_URL } }]] } }).catch(() => {});
+    }
+    ok(res, msg);
+  } catch (e) { console.error(e); res.status(500).json({ success: false, error: 'server_error' }); }
+});
+
 // Расписание (для клиента — какие дни/слоты доступны).
 app.get('/api/schedule', auth, async (_req, res) => {
   try { ok(res, await db.getSchedule()); }
@@ -285,8 +310,34 @@ app.post('/api/admin/requests/:id/message', auth, requireMaster, async (req, res
     if (!text) return res.status(400).json({ success: false, error: 'empty' });
     const r = await db.getRequest(req.params.id);
     if (!r) return res.status(404).json({ success: false, error: 'not_found' });
+    await db.addMessage(r.clientId, 'master', text);
     const sent = await sendMessage(r.clientId, `💬 <b>Сообщение от мастера</b>\n${escapeHtml(text)}\n\n<i>Ответьте на это сообщение здесь, в чате.</i>`);
     ok(res, { sent });
+  } catch (e) { console.error(e); res.status(500).json({ success: false, error: 'server_error' }); }
+});
+
+// ── Чат: мастер ───────────────────────────────────────────────
+app.get('/api/admin/conversations', auth, requireMaster, async (_req, res) => {
+  try { ok(res, await db.getConversations()); }
+  catch (e) { console.error(e); res.status(500).json({ success: false, error: 'server_error' }); }
+});
+
+app.get('/api/admin/messages', auth, requireMaster, async (req, res) => {
+  try {
+    const clientId = String(req.query.clientId || '');
+    if (!clientId) return res.status(400).json({ success: false, error: 'no_client' });
+    ok(res, await db.getMessages(clientId));
+  } catch (e) { console.error(e); res.status(500).json({ success: false, error: 'server_error' }); }
+});
+
+app.post('/api/admin/messages', auth, requireMaster, async (req, res) => {
+  try {
+    const clientId = String(req.body?.clientId || '');
+    const text = (req.body?.text || '').trim();
+    if (!clientId || !text) return res.status(400).json({ success: false, error: 'bad_input' });
+    const msg = await db.addMessage(clientId, 'master', text);
+    await sendMessage(clientId, `💬 <b>Сообщение от мастера</b>\n${escapeHtml(text)}\n\n<i>Ответьте здесь или в приложении.</i>`);
+    ok(res, msg);
   } catch (e) { console.error(e); res.status(500).json({ success: false, error: 'server_error' }); }
 });
 
@@ -390,12 +441,14 @@ app.post('/api/tg/webhook', (req, res) => {
     sendWelcome(msg.chat.id).catch(() => {});
     return;
   }
-  // Любое другое сообщение от клиента (не мастера) → пересылаем мастеру.
+  // Любое другое сообщение от клиента (не мастера) → сохраняем в чат + пуш мастеру.
   if (fromId && !isMaster(fromId)) {
     const who = msg.from.first_name || msg.from.username || fromId;
     const tag = msg.from.username ? ` (@${msg.from.username})` : '';
+    db.addMessage(fromId, 'client', text).catch(() => {});
     for (const mid of MASTER_IDS) {
-      sendMessage(mid, `💬 <b>Ответ клиента</b> ${escapeHtml(String(who))}${escapeHtml(tag)}:\n${escapeHtml(text)}`).catch(() => {});
+      sendMessage(mid, `💬 <b>Ответ клиента</b> ${escapeHtml(String(who))}${escapeHtml(tag)}:\n${escapeHtml(text)}`,
+        { reply_markup: { inline_keyboard: [[{ text: 'Открыть чат', web_app: { url: APP_URL } }]] } }).catch(() => {});
     }
   }
 });
