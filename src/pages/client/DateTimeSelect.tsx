@@ -10,7 +10,10 @@ import { CLIENT_ROUTES } from '../../routes';
 import { useBookingStore, useNotification } from '../../store';
 import { Button } from '../../components/ui';
 import { createRequest } from '../../services/requestsApi';
-import { getDaySlots } from '../../services/masterApi';
+import { getDaySlots, getSchedule } from '../../services/masterApi';
+
+// Ключ дня недели → индекс Date.getDay() (Вс=0 … Сб=6).
+const DOW_INDEX: Record<string, number> = { sun: 0, mon: 1, tue: 2, wed: 3, thu: 4, fri: 5, sat: 6 };
 
 const MONTHS = [
   'Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь',
@@ -32,6 +35,8 @@ export const DateTimeSelect: React.FC = () => {
   const [slots, setSlots] = useState<string[]>([]);
   const [taken, setTaken] = useState<Set<string>>(new Set());
   const [loadingSlots, setLoadingSlots] = useState(false);
+  // Рабочие дни недели мастера (индексы Date.getDay()). По умолчанию Пн–Пт.
+  const [workingDows, setWorkingDows] = useState<Set<number>>(new Set([1, 2, 3, 4, 5]));
 
   const today = useMemo(() => new Date(), []);
   const minYM = today.getFullYear() * 12 + today.getMonth();
@@ -44,6 +49,17 @@ export const DateTimeSelect: React.FC = () => {
     hideMainButton();
     if (!hasSelection()) navigate(CLIENT_ROUTES.CATALOG);
   }, [hasSelection, navigate]);
+
+  // Рабочие дни недели из расписания мастера — для подсветки календаря.
+  useEffect(() => {
+    getSchedule()
+      .then((days) => {
+        const s = new Set<number>();
+        days.forEach((d) => { if (d.working) s.add(DOW_INDEX[d.key]); });
+        setWorkingDows(s);
+      })
+      .catch(() => {});
+  }, []);
 
   // Слоты на выбранную дату — из расписания мастера (минус занятые).
   useEffect(() => {
@@ -144,19 +160,19 @@ export const DateTimeSelect: React.FC = () => {
             const past = isPast(d);
             const selected = date === dIso;
             const dow = new Date(year, month, d).getDay();
-            const weekend = dow === 0 || dow === 6; // Сб/Вс
+            const working = workingDows.has(dow);
+            // Доступен = будущий рабочий день. Прошедшие и нерабочие — серые и некликабельны.
+            const unavailable = past || !working;
             return (
               <button
                 key={d}
-                disabled={past}
+                disabled={unavailable}
                 onClick={() => setDate(dIso)}
                 className={`mx-auto w-7 h-7 rounded-full text-xs flex items-center justify-center transition-colors ${
                   selected
                     ? 'bg-brand text-[color:rgb(var(--brand-contrast))]'
-                    : past
+                    : unavailable
                     ? 'text-hint/50'
-                    : weekend
-                    ? 'text-hint hover:bg-brand/10'
                     : 'text-fg hover:bg-brand/10'
                 }`}
               >
