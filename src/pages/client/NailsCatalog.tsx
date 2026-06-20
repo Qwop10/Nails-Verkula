@@ -84,7 +84,16 @@ export const NailsCatalog: React.FC = () => {
 
   return (
     <div className="flex-1 flex flex-col">
-      <h1 className="font-serif text-xl text-fg">Выберите услугу</h1>
+      <div className="flex items-center gap-2">
+        <button
+          onClick={() => navigate(CLIENT_ROUTES.HOME)}
+          className="text-brand text-2xl leading-none -ml-1 px-1"
+          aria-label="Назад на главную"
+        >
+          ‹
+        </button>
+        <h1 className="font-serif text-xl text-fg">Выберите услугу</h1>
+      </div>
       <p className="text-sm text-muted mb-4">до 2: 1 основная + 1 дополнительная</p>
 
       <p className="text-[11px] uppercase tracking-wider text-muted mb-2">
