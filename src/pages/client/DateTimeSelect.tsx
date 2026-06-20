@@ -122,7 +122,16 @@ export const DateTimeSelect: React.FC = () => {
 
   return (
     <div className="flex-1 flex flex-col">
-      <h1 className="font-serif text-xl text-fg">Дата и время</h1>
+      <div className="flex items-center gap-2">
+        <button
+          onClick={() => navigate(CLIENT_ROUTES.CATALOG)}
+          className="text-brand text-2xl leading-none -ml-1 px-1"
+          aria-label="Назад к выбору услуги"
+        >
+          ‹
+        </button>
+        <h1 className="font-serif text-xl text-fg">Дата и время</h1>
+      </div>
       <p className="text-sm text-muted mb-4">{total().toLocaleString('ru-RU')} ₽ за выбранные услуги</p>
 
       {/* Календарь */}
