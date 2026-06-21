@@ -72,25 +72,31 @@ export async function initSchema() {
     );
   `);
   // Засев по умолчанию (только если таблица пустая).
+  await seedScheduleIfEmpty();
+}
+
+/** Создаёт дефолтное расписание, если таблица пустая. Идемпотентно. */
+async function seedScheduleIfEmpty() {
   const { rows } = await pool.query(`SELECT COUNT(*)::int AS c FROM schedule`);
-  if (rows[0].c === 0) {
-    const work = ['10:00', '11:00', '12:00', '13:00'];
-    const def = [
-      ['mon', true,  work],
-      ['tue', true,  work],
-      ['wed', true,  work],
-      ['thu', true,  work],
-      ['fri', true,  work],
-      ['sat', false, []],
-      ['sun', false, []],
-    ];
-    for (const [day, working, slots] of def) {
-      await pool.query(
-        `INSERT INTO schedule (day, working, slots) VALUES ($1,$2,$3::jsonb)`,
-        [day, working, JSON.stringify(slots)]
-      );
-    }
+  if (rows[0].c > 0) return false;
+  const work = ['10:00', '11:00', '12:00', '13:00'];
+  const def = [
+    ['mon', true,  work],
+    ['tue', true,  work],
+    ['wed', true,  work],
+    ['thu', true,  work],
+    ['fri', true,  work],
+    ['sat', false, []],
+    ['sun', false, []],
+  ];
+  for (const [day, working, slots] of def) {
+    await pool.query(
+      `INSERT INTO schedule (day, working, slots) VALUES ($1,$2,$3::jsonb)
+       ON CONFLICT (day) DO NOTHING`,
+      [day, working, JSON.stringify(slots)]
+    );
   }
+  return true;
 }
 
 function rowToRequest(r) {
@@ -215,7 +221,12 @@ export async function markReminded2h(id) {
 const DOW_KEYS = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat']; // Date.getDay() → ключ
 
 export async function getSchedule() {
-  const { rows } = await pool.query(`SELECT day, working, slots FROM schedule`);
+  let { rows } = await pool.query(`SELECT day, working, slots FROM schedule`);
+  // Самовосстановление: если расписание очистили — пересоздаём дефолт.
+  if (rows.length === 0) {
+    await seedScheduleIfEmpty();
+    ({ rows } = await pool.query(`SELECT day, working, slots FROM schedule`));
+  }
   const order = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
   return rows
     .map((r) => ({ day: r.day, working: r.working, slots: r.slots || [] }))
