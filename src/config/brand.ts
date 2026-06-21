@@ -27,11 +27,4 @@ export const BRAND = {
       bank: 'Сбер',
     },
   },
-
-  /** Платёжный провайдер (подключим ЮKassa позже — см. server/payments). */
-  payment: {
-    provider: 'yookassa' as const,
-    /** Пока ключей нет — оплата работает в режиме-заглушке. */
-    enabled: false,
-  },
 } as const;

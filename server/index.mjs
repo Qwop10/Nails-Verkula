@@ -2,7 +2,8 @@
  * server/index.mjs
  * Express: фронтенд + REST API под модель Nails «заявка на рассмотрение».
  * Цикл: создать → (мастер) одобрить/правка/отклонить → оплата брони → подтверждение.
- * Оплата — через провайдер (ЮKassa / demo). Авторизация — Telegram initData.
+ * Оплата брони — ручной перевод по реквизитам: клиент присылает фото чека,
+ * мастер проверяет и подтверждает. Авторизация — Telegram initData.
  */
 import express from 'express';
 import { fileURLToPath } from 'node:url';
@@ -21,7 +22,6 @@ import {
 import * as db from './db.mjs';
 import { MASTER_IDS, isMaster, newId, ok, escapeHtml, auth, requireMaster } from './lib.mjs';
 import { STUDIO_ADDRESS, MEMO_TEXT, CONTRA_TEXT } from './content.mjs';
-import { getPaymentProvider, PAYMENTS_ENABLED } from './payments/index.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const DIST = join(__dirname, '..', 'dist');
@@ -60,7 +60,7 @@ async function notifyConfirmed(r) {
 app.get('/api/health', async (_req, res) => {
   let dbOk = false;
   try { await db.pool.query('SELECT 1'); dbOk = true; } catch { dbOk = false; }
-  res.json({ ok: true, bot: hasBotToken(), db: dbOk, payments: PAYMENTS_ENABLED });
+  res.json({ ok: true, bot: hasBotToken(), db: dbOk });
 });
 
 app.get('/api/me', auth, (req, res) =>
@@ -274,62 +274,25 @@ app.post('/api/requests/:id/cancel', auth, async (req, res) => {
 
     const updated = await db.setStatus(req.params.id, 'cancelled');
 
-    // Автоматический возврат брони, если отмена вовремя и бронь была оплачена.
-    let refunded = false;
-    if (refundable && r.bookingPaid && r.paymentId) {
-      try {
-        const result = await getPaymentProvider().refund({ paymentId: r.paymentId, amount: r.bookingFee });
-        refunded = result.status === 'succeeded' || result.status === 'pending';
-      } catch (e) {
-        console.error('refund error:', e.message);
-        // Возврат не прошёл автоматически — уведомим мастера сделать вручную.
-      }
-    }
+    // Оплата ручная (перевод по реквизитам) — авто-возврата нет.
+    // Если отмена вовремя и бронь оплачена, мастер вернёт её переводом вручную.
+    const refunded = refundable && r.bookingPaid;
 
     for (const mid of MASTER_IDS) {
       const tail = r.bookingPaid
-        ? refunded
-          ? ' · бронь возвращена автоматически ✅'
-          : refundable
-          ? ' · ⚠️ возврат не прошёл — вернуть вручную'
+        ? refundable
+          ? ' · ⚠️ вернуть бронь клиенту переводом'
           : ' · бронь не возвращается (отмена поздно)'
         : '';
       sendMessage(mid, `❌ Отмена записи: ${escapeHtml(r.clientName)} · ${prettyDate(r.date)} ${r.time}${tail}`);
     }
-    // Клиенту — подтверждение возврата.
+    // Клиенту — сообщение о возврате (мастер вернёт перевод вручную).
     if (refunded) {
-      sendMessage(r.clientId, `↩️ Запись отменена. Бронь ${fmtRu(r.bookingFee)} возвращается на карту в течение нескольких дней.`);
+      sendMessage(r.clientId, `↩️ Запись отменена. Бронь ${fmtRu(r.bookingFee)} мастер вернёт переводом в ближайшее время.`);
     }
 
     ok(res, { ...updated, refunded });
   } catch (e) { console.error(e); res.status(500).json({ success: false, error: 'server_error' }); }
-});
-
-// Оплата брони (после одобрения)
-app.post('/api/requests/:id/pay-booking', auth, async (req, res) => {
-  try {
-    const r = await db.getRequest(req.params.id);
-    if (!r) return res.status(404).json({ success: false, error: 'not_found' });
-    if (String(r.clientId) !== String(req.user.id)) return res.status(403).json({ success: false, error: 'forbidden' });
-    if (r.status !== 'payment_pending') return res.status(409).json({ success: false, error: 'bad_status' });
-
-    const provider = getPaymentProvider();
-    const payment = await provider.createBookingPayment({
-      amount: r.bookingFee, requestId: r.id,
-      description: `Бронь · ${labelsOf(r)}`, returnUrl: APP_URL,
-    });
-
-    // demo/мгновенный успех → подтверждаем сразу. Реальный ЮKassa → ждём вебхук.
-    if (payment.status === 'succeeded') {
-      const updated = await db.markBookingPaid(r.id, payment.id);
-      await notifyConfirmed(updated);
-      return ok(res, { status: 'succeeded', confirmationUrl: null, request: updated });
-    }
-    ok(res, { status: payment.status, confirmationUrl: payment.confirmationUrl });
-  } catch (e) {
-    console.error('pay-booking error:', e);
-    res.status(500).json({ success: false, error: 'payment_error' });
-  }
 });
 
 // Клиент прислал чек об оплате брони → на проверку мастеру.
@@ -504,24 +467,6 @@ app.post('/api/broadcast', auth, requireMaster, async (req, res) => {
   } catch (e) { console.error(e); res.status(500).json({ success: false, error: 'server_error' }); }
 });
 
-// ============================ PAYMENTS WEBHOOK ============================
-// ЮKassa шлёт уведомления об оплате. TODO: проверка источника (IP allowlist ЮKassa).
-app.post('/api/payments/webhook', async (req, res) => {
-  res.sendStatus(200); // отвечаем сразу
-  try {
-    const info = getPaymentProvider().parseWebhook(req.body);
-    if (info?.event === 'payment.succeeded' && info.requestId) {
-      const r = await db.getRequest(info.requestId);
-      if (r && !r.bookingPaid) {
-        const updated = await db.markBookingPaid(info.requestId, info.paymentId);
-        await notifyConfirmed(updated);
-      }
-    }
-  } catch (e) {
-    console.warn('[payments] webhook error:', e.message);
-  }
-});
-
 // ============================ TELEGRAM WEBHOOK ============================
 app.post('/api/tg/webhook', (req, res) => {
   if (req.get('X-Telegram-Bot-Api-Secret-Token') !== WEBHOOK_SECRET) return res.sendStatus(401);
@@ -599,7 +544,7 @@ app.get('*', (_req, res) => res.sendFile(join(DIST, 'index.html')));
 Promise.all([db.initSchema(), initStorage()])
   .then(() => {
     app.listen(PORT, '0.0.0.0', () => {
-      console.log(`Server listening on 0.0.0.0:${PORT} (bot: ${hasBotToken()}, payments: ${PAYMENTS_ENABLED})`);
+      console.log(`Server listening on 0.0.0.0:${PORT} (bot: ${hasBotToken()})`);
       setWebhook();
       // Планировщик напоминаний: сразу и далее каждые 15 минут.
       runReminders();

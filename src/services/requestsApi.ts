@@ -4,7 +4,7 @@
  */
 import type { RequestStatus } from '../config/services.config';
 import { getService } from '../config/services.config';
-import { api, openExternal } from './api';
+import { api } from './api';
 
 export interface ClientRequest {
   id: string;
@@ -109,19 +109,4 @@ export async function cancelRequest(id: string): Promise<{ refunded: boolean }> 
 export async function submitReceipt(id: string, receipt: string): Promise<ClientRequest> {
   const r = await api.post<ServerRequest>(`/api/requests/${id}/submit-receipt`, { receipt });
   return toClientRequest(r);
-}
-
-/**
- * Оплата брони. Если провайдер вернул ссылку (ЮKassa) — редиректим на оплату.
- * Если demo/мгновенный успех — возвращаем { paid:true }.
- */
-export async function payBooking(id: string): Promise<{ paid: boolean }> {
-  const res = await api.post<{ status: string; confirmationUrl: string | null }>(
-    `/api/requests/${id}/pay-booking`
-  );
-  if (res.confirmationUrl) {
-    openExternal(res.confirmationUrl);
-    return { paid: false }; // оплата продолжится на стороне ЮKassa → подтверждение по вебхуку
-  }
-  return { paid: res.status === 'succeeded' };
 }

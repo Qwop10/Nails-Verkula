@@ -40,10 +40,3 @@ export const api = {
   post: <T>(path: string, body?: unknown) => request<T>('POST', path, body),
   patch: <T>(path: string, body?: unknown) => request<T>('PATCH', path, body),
 };
-
-/** Открыть внешнюю ссылку (для редиректа на оплату ЮKassa). */
-export function openExternal(url: string): void {
-  const tg = (window as unknown as { Telegram?: { WebApp?: { openLink?: (u: string) => void } } }).Telegram?.WebApp;
-  if (tg?.openLink) tg.openLink(url);
-  else window.location.href = url;
-}
