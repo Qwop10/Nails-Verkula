@@ -73,6 +73,14 @@ export async function initSchema() {
   `);
   // Засев по умолчанию (только если таблица пустая).
   await seedScheduleIfEmpty();
+
+  // Расписание по конкретным датам (приоритетнее недельного шаблона).
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS schedule_dates (
+      d      DATE PRIMARY KEY,
+      slots  JSONB NOT NULL DEFAULT '[]'::jsonb
+    );
+  `);
 }
 
 /** Создаёт дефолтное расписание, если таблица пустая. Идемпотентно. */
@@ -291,19 +299,84 @@ export async function getReport(period) {
   };
 }
 
+// ── Расписание по датам ───────────────────────────────────────
+/** Есть ли вообще расписание по конкретным датам (режим «по датам» активен). */
+export async function hasPerDateSchedule() {
+  const { rows } = await pool.query(`SELECT 1 FROM schedule_dates LIMIT 1`);
+  return rows.length > 0;
+}
+
+/** Сохранить расписание на месяц (затирает существующее в этом месяце). */
+export async function setMonthSchedule(year, month, entries) {
+  const mm = String(month).padStart(2, '0');
+  const firstDay = `${year}-${mm}-01`;
+  await pool.query(
+    `DELETE FROM schedule_dates WHERE date_trunc('month', d) = date_trunc('month', $1::date)`,
+    [firstDay]
+  );
+  let saved = 0;
+  for (const e of entries) {
+    const slots = Array.isArray(e.slots) ? e.slots : [];
+    if (!e.day || slots.length === 0) continue;
+    const dd = String(e.day).padStart(2, '0');
+    const iso = `${year}-${mm}-${dd}`;
+    await pool.query(
+      `INSERT INTO schedule_dates (d, slots) VALUES ($1, $2::jsonb)
+       ON CONFLICT (d) DO UPDATE SET slots = $2::jsonb`,
+      [iso, JSON.stringify(slots)]
+    );
+    saved++;
+  }
+  return saved;
+}
+
+/** Открытые даты в диапазоне (для подсветки календаря у клиента). */
+export async function getOpenDates(fromIso, toIso) {
+  if (await hasPerDateSchedule()) {
+    const { rows } = await pool.query(
+      `SELECT to_char(d, 'YYYY-MM-DD') AS d FROM schedule_dates
+        WHERE jsonb_array_length(slots) > 0 AND d BETWEEN $1 AND $2`,
+      [fromIso, toIso]
+    );
+    return rows.map((r) => r.d);
+  }
+  // Фолбэк: недельный шаблон.
+  const sched = await getSchedule();
+  const map = { sun: 0, mon: 1, tue: 2, wed: 3, thu: 4, fri: 5, sat: 6 };
+  const workingDows = new Set();
+  sched.forEach((s) => { if (s.working && (s.slots || []).length) workingDows.add(map[s.day]); });
+  const out = [];
+  const cur = new Date(fromIso + 'T00:00:00');
+  const end = new Date(toIso + 'T00:00:00');
+  while (cur <= end) {
+    if (workingDows.has(cur.getDay())) out.push(cur.toISOString().slice(0, 10));
+    cur.setDate(cur.getDate() + 1);
+  }
+  return out;
+}
+
 /** Доступные слоты на конкретную дату (с учётом расписания и уже занятых). */
 export async function getDayAvailability(dateIso) {
-  const dow = DOW_KEYS[new Date(dateIso + 'T00:00:00').getDay()];
-  const { rows } = await pool.query(`SELECT working, slots FROM schedule WHERE day = $1`, [dow]);
-  const row = rows[0];
-  if (!row || !row.working) return { slots: [], taken: [] };
-  const slots = row.slots || [];
-  const { rows: taken } = await pool.query(
+  const { rows: takenRows } = await pool.query(
     `SELECT req_time FROM requests
       WHERE req_date = $1 AND status = ANY($2) AND req_time IS NOT NULL`,
     [dateIso, ['pending_review', 'payment_pending', 'confirmed']]
   );
-  return { slots, taken: taken.map((t) => t.req_time) };
+  const taken = takenRows.map((t) => t.req_time);
+
+  // 1) Расписание по конкретной дате — приоритет.
+  const { rows: pd } = await pool.query(`SELECT slots FROM schedule_dates WHERE d = $1`, [dateIso]);
+  if (pd[0]) return { slots: pd[0].slots || [], taken };
+
+  // 2) Если режим «по датам» активен, но этой даты нет — закрыто.
+  if (await hasPerDateSchedule()) return { slots: [], taken: [] };
+
+  // 3) Фолбэк: недельный шаблон.
+  const dow = DOW_KEYS[new Date(dateIso + 'T00:00:00').getDay()];
+  const { rows } = await pool.query(`SELECT working, slots FROM schedule WHERE day = $1`, [dow]);
+  const row = rows[0];
+  if (!row || !row.working) return { slots: [], taken };
+  return { slots: row.slots || [], taken };
 }
 
 // ── Заявки ────────────────────────────────────────────────────

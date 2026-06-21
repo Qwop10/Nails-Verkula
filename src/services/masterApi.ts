@@ -119,6 +119,20 @@ export async function getDaySlots(date: string): Promise<{ slots: string[]; take
   return api.get<{ slots: string[]; taken: string[] }>(`/api/slots?date=${encodeURIComponent(date)}`);
 }
 
+/** Открытые даты в диапазоне (для подсветки календаря). */
+export async function getOpenDates(from: string, to: string): Promise<string[]> {
+  return api.get<string[]>(`/api/open-dates?from=${from}&to=${to}`);
+}
+
+/** Сохранить расписание на месяц (год, месяц 1–12, список {day,slots}). */
+export async function saveMonthSchedule(
+  year: number,
+  month: number,
+  entries: { day: number; slots: string[] }[]
+): Promise<{ saved: number }> {
+  return api.post<{ saved: number }>('/api/admin/schedule/month', { year, month, entries });
+}
+
 export async function getSchedule(): Promise<ScheduleDay[]> {
   const rows = await api.get<ServerScheduleDay[]>('/api/schedule');
   return rows.map(toScheduleDay);

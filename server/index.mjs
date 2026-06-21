@@ -106,6 +106,30 @@ app.get('/api/schedule', auth, async (_req, res) => {
   catch (e) { console.error(e); res.status(500).json({ success: false, error: 'server_error' }); }
 });
 
+// Открытые даты в диапазоне (?from=YYYY-MM-DD&to=YYYY-MM-DD) — для календаря клиента.
+app.get('/api/open-dates', auth, async (req, res) => {
+  try {
+    const from = String(req.query.from || '');
+    const to = String(req.query.to || '');
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(from) || !/^\d{4}-\d{2}-\d{2}$/.test(to)) {
+      return res.status(400).json({ success: false, error: 'bad_range' });
+    }
+    ok(res, await db.getOpenDates(from, to));
+  } catch (e) { console.error(e); res.status(500).json({ success: false, error: 'server_error' }); }
+});
+
+// Сохранить расписание на месяц (мастер): { year, month, entries:[{day,slots}] }.
+app.post('/api/admin/schedule/month', auth, requireMaster, async (req, res) => {
+  try {
+    const { year, month, entries } = req.body || {};
+    if (!year || !month || !Array.isArray(entries)) {
+      return res.status(400).json({ success: false, error: 'bad_input' });
+    }
+    const saved = await db.setMonthSchedule(Number(year), Number(month), entries);
+    ok(res, { saved });
+  } catch (e) { console.error(e); res.status(500).json({ success: false, error: 'server_error' }); }
+});
+
 // Доступные слоты на конкретную дату (?date=YYYY-MM-DD).
 app.get('/api/slots', auth, async (req, res) => {
   try {

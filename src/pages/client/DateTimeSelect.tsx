@@ -10,10 +10,7 @@ import { CLIENT_ROUTES } from '../../routes';
 import { useBookingStore, useNotification } from '../../store';
 import { Button } from '../../components/ui';
 import { createRequest } from '../../services/requestsApi';
-import { getDaySlots, getSchedule } from '../../services/masterApi';
-
-// Ключ дня недели → индекс Date.getDay() (Вс=0 … Сб=6).
-const DOW_INDEX: Record<string, number> = { sun: 0, mon: 1, tue: 2, wed: 3, thu: 4, fri: 5, sat: 6 };
+import { getDaySlots, getOpenDates } from '../../services/masterApi';
 
 const MONTHS = [
   'Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь',
@@ -35,8 +32,8 @@ export const DateTimeSelect: React.FC = () => {
   const [slots, setSlots] = useState<string[]>([]);
   const [taken, setTaken] = useState<Set<string>>(new Set());
   const [loadingSlots, setLoadingSlots] = useState(false);
-  // Рабочие дни недели мастера (индексы Date.getDay()). По умолчанию Пн–Пт.
-  const [workingDows, setWorkingDows] = useState<Set<number>>(new Set([1, 2, 3, 4, 5]));
+  // Открытые для записи даты (из расписания мастера).
+  const [openDates, setOpenDates] = useState<Set<string>>(new Set());
 
   const today = useMemo(() => new Date(), []);
   const minYM = today.getFullYear() * 12 + today.getMonth();
@@ -50,14 +47,14 @@ export const DateTimeSelect: React.FC = () => {
     if (!hasSelection()) navigate(CLIENT_ROUTES.CATALOG);
   }, [hasSelection, navigate]);
 
-  // Рабочие дни недели из расписания мастера — для подсветки календаря.
+  // Открытые даты из расписания мастера — для подсветки календаря (на ~3 месяца).
   useEffect(() => {
-    getSchedule()
-      .then((days) => {
-        const s = new Set<number>();
-        days.forEach((d) => { if (d.working) s.add(DOW_INDEX[d.key]); });
-        setWorkingDows(s);
-      })
+    const from = new Date();
+    const to = new Date();
+    to.setDate(to.getDate() + 92);
+    const isoOf = (d: Date) => d.toISOString().slice(0, 10);
+    getOpenDates(isoOf(from), isoOf(to))
+      .then((dates) => setOpenDates(new Set(dates)))
       .catch(() => {});
   }, []);
 
@@ -178,10 +175,8 @@ export const DateTimeSelect: React.FC = () => {
             const dIso = iso(year, month, d);
             const past = isPast(d);
             const selected = date === dIso;
-            const dow = new Date(year, month, d).getDay();
-            const working = workingDows.has(dow);
-            // Доступен = будущий рабочий день. Прошедшие и нерабочие — серые и некликабельны.
-            const unavailable = past || !working;
+            // Доступен = будущая открытая дата. Прошедшие и закрытые — серые и некликабельны.
+            const unavailable = past || !openDates.has(dIso);
             return (
               <button
                 key={d}
