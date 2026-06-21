@@ -278,13 +278,16 @@ app.post('/api/requests/:id/cancel', auth, async (req, res) => {
     // Если отмена вовремя и бронь оплачена, мастер вернёт её переводом вручную.
     const refunded = refundable && r.bookingPaid;
 
+    // Контакты клиента — чтобы мастер мог связаться (и вернуть бронь переводом).
+    const phone = r.clientPhone ? escapeHtml(r.clientPhone) : '—';
+    const contact = `\n📞 ${phone}\n✈️ <a href="tg://user?id=${r.clientId}">Написать в Telegram</a>`;
     for (const mid of MASTER_IDS) {
       const tail = r.bookingPaid
         ? refundable
           ? ' · ⚠️ вернуть бронь клиенту переводом'
           : ' · бронь не возвращается (отмена поздно)'
         : '';
-      sendMessage(mid, `❌ Отмена записи: ${escapeHtml(r.clientName)} · ${prettyDate(r.date)} ${r.time}${tail}`);
+      sendMessage(mid, `❌ Отмена записи: ${escapeHtml(r.clientName)} · ${prettyDate(r.date)} ${r.time}${tail}${contact}`);
     }
     // Клиенту — сообщение о возврате (мастер вернёт перевод вручную).
     if (refunded) {
