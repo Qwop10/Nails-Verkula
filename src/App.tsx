@@ -13,6 +13,7 @@ import { getTelegramUser } from './services';
 import { ClientLayout, MasterLayout } from './layouts';
 import { ToastContainer } from './components/ui';
 import { ConsentScreen } from './components/ConsentScreen';
+import { getProfile, saveConsent } from './services/requestsApi';
 import { MASTER_TELEGRAM_IDS } from './constants';
 
 type UserRole = 'client' | 'master';
@@ -66,9 +67,10 @@ const App: React.FC = () => {
   const setUserRole = useAppStore((state) => state.setUserRole);
   const setInitialized = useAppStore((state) => state.setInitialized);
   const userRole = useUserRole();
-  const [consented, setConsented] = React.useState<boolean>(() => {
-    try { return localStorage.getItem('nv_consent') === '1'; } catch { return false; }
-  });
+  // Согласие на обработку ПД — источник истины на сервере, чтобы при очистке
+  // базы / повторной верификации экран согласия снова показывался.
+  // null = ещё проверяем, true/false = известно.
+  const [consented, setConsented] = React.useState<boolean | null>(null);
 
   useTelegramTheme();
 
@@ -89,10 +91,15 @@ const App: React.FC = () => {
     setUserRole(resolveUserRole(tgUser?.id));
 
     setInitialized(true);
+
+    // Проверяем согласие на сервере (привязано к Telegram id клиента).
+    getProfile()
+      .then((p) => setConsented(p.consent))
+      .catch(() => setConsented(false));
   }, [setTelegramUser, setUserRole, setInitialized]);
 
-  // Загрузка  инициализация
-  if (!userRole) {
+  // Загрузка / инициализация (роль или статус согласия ещё неизвестны).
+  if (!userRole || consented === null) {
     return <div>Loading...</div>;
   }
 
@@ -101,7 +108,7 @@ const App: React.FC = () => {
     return (
       <ConsentScreen
         onAccept={() => {
-          try { localStorage.setItem('nv_consent', '1'); } catch { /* ignore */ }
+          saveConsent().catch(() => { /* ignore — повторим при следующем входе */ });
           setConsented(true);
         }}
         onDecline={() => {

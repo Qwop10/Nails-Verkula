@@ -63,9 +63,17 @@ export const NailsCatalog: React.FC = () => {
     hideMainButton();
   }, []);
 
+  // Подсветка ошибки, если пытаются продолжить без фото ногтевой пластины.
+  const [photoError, setPhotoError] = React.useState(false);
+
   const handleNext = () => {
     if (!hasSelection()) {
       notify.error('Выберите хотя бы одну услугу');
+      return;
+    }
+    if (photos.length === 0) {
+      setPhotoError(true);
+      notify.error('Приложите фото ногтевой пластины');
       return;
     }
     selectionHaptic();
@@ -80,6 +88,7 @@ export const NailsCatalog: React.FC = () => {
     try {
       const added = await Promise.all(files.slice(0, free).map((f) => compressImage(f)));
       setPhotos([...photos, ...added]);
+      setPhotoError(false);
     } catch {
       notify.error('Не удалось добавить фото');
     }
@@ -169,9 +178,15 @@ export const NailsCatalog: React.FC = () => {
         onChange={(e) => setWishes(e.target.value)}
       />
 
-      {/* Фото состояния ногтей (до 3) */}
-      <p className="text-[11px] uppercase tracking-wider text-muted mb-1 mt-3">Фото ваших ногтей (по желанию)</p>
-      <p className="text-[11px] text-hint mb-2">Сфотографируйте ногти, чтобы мастер видел текущее состояние и объём работы.</p>
+      {/* Фото ногтевой пластины (обязательно, до 3) */}
+      <p className="text-[11px] uppercase tracking-wider text-muted mb-1 mt-3">
+        Фото ногтевой пластины <span className="text-red-500">(обязательно!)</span>
+      </p>
+      <p className={`text-[11px] mb-2 ${photoError ? 'text-red-500' : 'text-hint'}`}>
+        {photoError
+          ? 'Приложите фото ногтевой пластины'
+          : 'Обязательно: сфотографируйте ногти, чтобы мастер видел текущее состояние и объём работы.'}
+      </p>
       <div className="flex gap-2">
         {photos.map((src, i) => (
           <div key={i} className="relative w-16 h-16 rounded-tile overflow-hidden border border-line">
@@ -186,7 +201,13 @@ export const NailsCatalog: React.FC = () => {
           </div>
         ))}
         {photos.length < 3 && (
-          <label className="w-16 h-16 rounded-tile border border-dashed border-brand/70 flex flex-col items-center justify-center text-brand cursor-pointer hover:bg-brand/5">
+          <label
+            className={`w-16 h-16 rounded-tile border border-dashed flex flex-col items-center justify-center cursor-pointer ${
+              photoError
+                ? 'border-red-500 text-red-500 bg-red-500/5'
+                : 'border-brand/70 text-brand hover:bg-brand/5'
+            }`}
+          >
             <span className="text-lg leading-none">＋</span>
             <span className="text-[9px]">фото</span>
             <input type="file" accept="image/*" multiple className="hidden" onChange={onAddPhotos} />

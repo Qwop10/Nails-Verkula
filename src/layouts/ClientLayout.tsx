@@ -109,14 +109,15 @@ export const ClientLayout: React.FC<ClientLayoutProps> = ({ children }) => {
         </nav>
       )}
 
-      {/* Кнопка возврата в панель мастера (видна только настоящему мастеру) */}
+      {/* Кнопка возврата в панель мастера (видна только настоящему мастеру).
+          Закреплена сверху справа и компактна, чтобы не перекрывать кнопки экрана. */}
       {isMasterPreviewing && (
         <button
           onClick={() => setUserRole('master')}
-          className="fixed left-1/2 -translate-x-1/2 z-40 flex items-center gap-2 px-4 py-2 rounded-full bg-[#1a1208] text-brand text-xs font-medium shadow-lg border border-brand/40"
-          style={{ bottom: showTabBar ? 76 : 16 }}
+          className="fixed right-3 z-40 flex items-center gap-1 px-3 py-1.5 rounded-full bg-[#1a1208] text-brand text-[11px] font-medium shadow-lg border border-brand/40"
+          style={{ top: 'calc(env(safe-area-inset-top, 0px) + 10px)' }}
         >
-          👑 Вернуться в панель мастера
+          👑 В панель мастера
         </button>
       )}
     </div>

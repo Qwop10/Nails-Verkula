@@ -67,11 +67,19 @@ app.get('/api/me', auth, (req, res) =>
   ok(res, { id: req.user.id, isMaster: isMaster(req.user.id) })
 );
 
-// Профиль клиента (сохранённые имя/телефон) — для автозаполнения формы.
+// Профиль клиента (сохранённые имя/телефон/согласие) — для автозаполнения формы.
 app.get('/api/profile', auth, async (req, res) => {
   try {
     const c = await db.getClient(req.user.id);
-    ok(res, c || { id: String(req.user.id), name: '', phone: '' });
+    ok(res, c || { id: String(req.user.id), name: '', phone: '', consent: false });
+  } catch (e) { console.error(e); res.status(500).json({ success: false, error: 'server_error' }); }
+});
+
+// Согласие на обработку персональных данных — фиксируем на сервере.
+app.post('/api/consent', auth, async (req, res) => {
+  try {
+    await db.setConsent(req.user.id);
+    ok(res, { consent: true });
   } catch (e) { console.error(e); res.status(500).json({ success: false, error: 'server_error' }); }
 });
 
@@ -185,12 +193,16 @@ app.post('/api/requests', auth, async (req, res) => {
       return res.status(400).json({ success: false, error: 'no_contact' });
     }
 
-    // Фото-референсы (data URL) → сохраняем файлами, максимум 3.
+    // Фото ногтевой пластины (data URL) → сохраняем файлами, максимум 3.
+    // Минимум одно фото обязательно.
     const rawPhotos = Array.isArray(b.photos) ? b.photos.slice(0, 3) : [];
     const photos = [];
     for (const p of rawPhotos) {
       const path = await saveDataUrl(p, 'ref');
       if (path) photos.push(path);
+    }
+    if (photos.length === 0) {
+      return res.status(400).json({ success: false, error: 'no_photo', message: 'Приложите фото ногтевой пластины' });
     }
 
     const r = await db.createRequest({

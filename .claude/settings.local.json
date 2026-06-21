@@ -5,7 +5,8 @@
       "Bash(git commit -m 'Gray everywhere + white readable text + запись terminology *)",
       "Bash(git push *)",
       "Bash(cd 'C:\\\\Users\\\\Пользователь\\\\Desktop\\\\nails-verkula' && mkdir -p public/photo && cp \"C:\\\\Users\\\\Пользователь\\\\Downloads\\\\Заявка одобрена.png\" public/photo/approved.png && ls -la public/photo/ && echo \"размер:\" && du -h public/photo/approved.png)",
-      "Bash(grep -iE \"\\\\.\\(jpg|jpeg|png|webp\\)$\")"
+      "Bash(grep -iE \"\\\\.\\(jpg|jpeg|png|webp\\)$\")",
+      "PowerShell(git add -A)"
     ]
   }
 }

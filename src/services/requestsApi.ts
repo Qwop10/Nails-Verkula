@@ -73,10 +73,15 @@ export async function createRequest(p: CreateRequestPayload): Promise<ClientRequ
   return toClientRequest(r);
 }
 
-/** Сохранённый профиль клиента (имя/телефон) для автозаполнения. */
-export async function getProfile(): Promise<{ name: string; phone: string }> {
-  const c = await api.get<{ name?: string; phone?: string }>('/api/profile');
-  return { name: c?.name || '', phone: c?.phone || '' };
+/** Сохранённый профиль клиента (имя/телефон/согласие) для автозаполнения. */
+export async function getProfile(): Promise<{ name: string; phone: string; consent: boolean }> {
+  const c = await api.get<{ name?: string; phone?: string; consent?: boolean }>('/api/profile');
+  return { name: c?.name || '', phone: c?.phone || '', consent: !!c?.consent };
+}
+
+/** Зафиксировать согласие на обработку персональных данных на сервере. */
+export async function saveConsent(): Promise<void> {
+  await api.post('/api/consent');
 }
 
 export async function getMyRequests(): Promise<ClientRequest[]> {

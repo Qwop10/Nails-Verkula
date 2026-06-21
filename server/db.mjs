@@ -19,9 +19,12 @@ export async function initSchema() {
       id          TEXT PRIMARY KEY,
       name        TEXT,
       phone       TEXT,
+      consent_at  TIMESTAMPTZ,
       created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
     );
   `);
+  // Миграция для существующих БД: добавляем колонку согласия на обработку ПД.
+  await pool.query(`ALTER TABLE clients ADD COLUMN IF NOT EXISTS consent_at TIMESTAMPTZ`);
   await pool.query(`
     CREATE TABLE IF NOT EXISTS requests (
       id            TEXT PRIMARY KEY,
@@ -145,11 +148,20 @@ export async function getAllClientIds() {
   return rows.map((r) => r.id);
 }
 
-/** Профиль клиента по Telegram id (имя/телефон) — для автозаполнения. */
+/** Профиль клиента по Telegram id (имя/телефон/согласие) — для автозаполнения. */
 export async function getClient(id) {
-  const { rows } = await pool.query(`SELECT id, name, phone FROM clients WHERE id = $1`, [String(id)]);
+  const { rows } = await pool.query(`SELECT id, name, phone, consent_at FROM clients WHERE id = $1`, [String(id)]);
   const r = rows[0];
-  return r ? { id: r.id, name: r.name || '', phone: r.phone || '' } : null;
+  return r ? { id: r.id, name: r.name || '', phone: r.phone || '', consent: !!r.consent_at } : null;
+}
+
+/** Записать согласие клиента на обработку ПД (создаёт запись, если её ещё нет). */
+export async function setConsent(id) {
+  await pool.query(
+    `INSERT INTO clients (id, consent_at) VALUES ($1, now())
+     ON CONFLICT (id) DO UPDATE SET consent_at = COALESCE(clients.consent_at, now())`,
+    [String(id)]
+  );
 }
 
 // ── Чат ───────────────────────────────────────────────────────
