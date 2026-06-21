@@ -19,6 +19,7 @@ import {
   getStats,
   approveRequest,
   rejectRequest,
+  confirmPayment,
   serviceLabels,
   requestTotal,
   allSlots,
@@ -76,7 +77,9 @@ export const MasterRequestsTab: React.FC = () => {
 
   const all = requests ?? [];
   const pending = all.filter((r) => r.status === 'pending_review');
-  const approved = all.filter((r) => r.status === 'payment_pending' || r.status === 'confirmed');
+  const approved = all.filter(
+    (r) => r.status === 'payment_pending' || r.status === 'receipt_review' || r.status === 'confirmed'
+  );
 
   const handleApprove = async (r: MasterRequest) => {
     await approveRequest(r.id);
@@ -86,6 +89,11 @@ export const MasterRequestsTab: React.FC = () => {
   const handleReject = async (r: MasterRequest) => {
     await rejectRequest(r.id);
     notify.info('Заявка отклонена');
+    reload();
+  };
+  const handleConfirmPayment = async (r: MasterRequest) => {
+    await confirmPayment(r.id);
+    notify.success('Оплата подтверждена — запись подтверждена');
     reload();
   };
   const openMessage = (r: MasterRequest) => {
@@ -183,27 +191,63 @@ export const MasterRequestsTab: React.FC = () => {
 
       <p className="text-[11px] uppercase tracking-wider text-muted mb-2 mt-2">Одобренные</p>
       {approved.length === 0 && <p className="text-xs text-hint mb-3">Пока нет.</p>}
-      {approved.map((r) => (
-        <div key={r.id} className="rounded-card bg-card border border-line p-3 mb-2">
-          <div className="flex items-center justify-between">
-            <span className="text-sm font-medium text-fg">{r.clientName}</span>
-            <span className="text-[11px] font-medium px-2 py-0.5 rounded-full text-brand-dark bg-brand/15">
-              {r.bookingPaid ? '✓ Бронь оплачена' : 'Ожидает оплаты'}
-            </span>
+      {approved.map((r) => {
+        const onReview = r.status === 'receipt_review';
+        const badge = r.bookingPaid
+          ? '✓ Бронь оплачена'
+          : onReview
+          ? '🧾 Чек на проверке'
+          : 'Ожидает оплаты';
+        return (
+          <div
+            key={r.id}
+            className={`rounded-card bg-card border p-3 mb-2 ${onReview ? 'border-l-2 border-l-brand border-line' : 'border-line'}`}
+          >
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-medium text-fg">{r.clientName}</span>
+              <span className="text-[11px] font-medium px-2 py-0.5 rounded-full text-brand-dark bg-brand/15">
+                {badge}
+              </span>
+            </div>
+            <p className="text-xs text-muted mt-0.5">
+              {prettyDate(r.date)} · {r.time} · {serviceLabels(r).join(' + ')}
+            </p>
+            <div className="flex items-center justify-between mt-2">
+              <span className="text-xs text-muted">{r.bookingPaid ? 'Заработано за услугу' : 'К оплате'}</span>
+              <span className="text-sm font-semibold text-brand">{fmt(requestTotal(r))}</span>
+            </div>
+
+            {/* Чек, присланный клиентом */}
+            {onReview && r.receipt && (
+              <a
+                href={r.receipt}
+                target="_blank"
+                rel="noreferrer"
+                className="block mt-2 rounded-tile overflow-hidden border border-line"
+              >
+                <img src={r.receipt} alt="чек оплаты" className="w-full max-h-56 object-contain bg-card-2" />
+              </a>
+            )}
+
+            {onReview && (
+              <Button
+                variant="primary"
+                size="sm"
+                fullWidth
+                className="mt-2"
+                onClick={() => handleConfirmPayment(r)}
+              >
+                Подтвердить оплату
+              </Button>
+            )}
+
+            <Button variant="secondary" size="sm" fullWidth className="mt-2 relative" onClick={() => openMessage(r)}>
+              Написать клиенту
+              {isUnread(String(r.clientTgId)) && <span className="absolute top-1.5 right-2 w-2 h-2 rounded-full bg-red-500" />}
+            </Button>
           </div>
-          <p className="text-xs text-muted mt-0.5">
-            {prettyDate(r.date)} · {r.time} · {serviceLabels(r).join(' + ')}
-          </p>
-          <div className="flex items-center justify-between mt-2">
-            <span className="text-xs text-muted">{r.bookingPaid ? 'Заработано за услугу' : 'К оплате'}</span>
-            <span className="text-sm font-semibold text-brand">{fmt(requestTotal(r))}</span>
-          </div>
-          <Button variant="secondary" size="sm" fullWidth className="mt-2 relative" onClick={() => openMessage(r)}>
-            Написать клиенту
-            {isUnread(String(r.clientTgId)) && <span className="absolute top-1.5 right-2 w-2 h-2 rounded-full bg-red-500" />}
-          </Button>
-        </div>
-      ))}
+        );
+      })}
 
       <p className="text-[11px] uppercase tracking-wider text-muted mb-2 mt-4">Расписание по дням</p>
       <MasterScheduleEditor />

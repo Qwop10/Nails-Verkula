@@ -63,6 +63,7 @@ export function calcTotal(mainId: string | null, addonIds: string[]): number {
 export type RequestStatus =
   | 'pending_review' // отправлена, ждёт мастера
   | 'payment_pending' // одобрена, ждёт оплаты брони
+  | 'receipt_review' // клиент прислал чек, ждёт проверки мастером
   | 'confirmed' // бронь оплачена → запись подтверждена
   | 'completed' // услуга оказана
   | 'rejected' // мастер отклонил
@@ -72,6 +73,7 @@ export type RequestStatus =
 export const REQUEST_STATUS_LABELS: Record<RequestStatus, string> = {
   pending_review: 'На рассмотрении',
   payment_pending: 'Ожидает оплаты',
+  receipt_review: 'Чек на проверке',
   confirmed: 'Подтверждена',
   completed: 'Завершена',
   rejected: 'Отклонена',

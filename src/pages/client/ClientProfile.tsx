@@ -27,6 +27,7 @@ const prettyDate = (iso: string) => iso.split('-').reverse().join('.');
 const STATUS_TONE: Record<RequestStatus, string> = {
   pending_review: 'text-brand bg-brand/10',
   payment_pending: 'text-brand-dark bg-brand/15',
+  receipt_review: 'text-brand-dark bg-brand/15',
   confirmed: 'text-brand-dark bg-brand/15',
   completed: 'text-muted bg-card-2',
   rejected: 'text-muted bg-card-2',
@@ -175,6 +176,15 @@ export const ClientProfile: React.FC = () => {
                   onClick={() => navigate(`/requests/${r.id}`)}
                 >
                   Оплатить бронь {fmt(r.bookingFee)}
+                </Button>
+              )}
+              {r.status === 'receipt_review' && (
+                <Button
+                  variant="secondary"
+                  fullWidth
+                  onClick={() => navigate(`/requests/${r.id}`)}
+                >
+                  Чек на проверке у мастера
                 </Button>
               )}
               {r.status === 'confirmed' && (

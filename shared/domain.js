@@ -80,6 +80,7 @@ export function nailTotal(mainId, addonIds = []) {
 export const REQUEST_STATUS_LABELS = {
   pending_review: 'На рассмотрении',
   payment_pending: 'Ожидает оплаты',
+  receipt_review: 'Чек на проверке',
   confirmed: 'Подтверждена',
   completed: 'Завершена',
   rejected: 'Отклонена',

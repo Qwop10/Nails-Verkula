@@ -21,6 +21,7 @@ export interface MasterRequest {
   bookingPaid: boolean;
   masterNote?: string;
   photos?: string[];
+  receipt?: string;
 }
 
 export interface ScheduleDay { key: string; label: string; working: boolean; slots: string[]; }
@@ -44,7 +45,7 @@ interface ServerRequest {
   id: string; clientId: string; clientName: string; clientPhone: string;
   status: RequestStatus; mainId: string | null; addonIds: string[];
   date: string | null; time: string | null; wishes?: string;
-  bookingPaid: boolean; masterNote?: string; photos?: string[];
+  bookingPaid: boolean; masterNote?: string; photos?: string[]; receipt?: string;
 }
 
 function toMasterRequest(r: ServerRequest): MasterRequest {
@@ -62,6 +63,7 @@ function toMasterRequest(r: ServerRequest): MasterRequest {
     bookingPaid: r.bookingPaid,
     masterNote: r.masterNote,
     photos: r.photos || [],
+    receipt: r.receipt || '',
   };
 }
 
@@ -80,6 +82,11 @@ export async function approveRequest(id: string): Promise<void> {
 
 export async function rejectRequest(id: string): Promise<void> {
   await api.post(`/api/admin/requests/${id}/reject`);
+}
+
+/** Мастер проверил чек и подтверждает оплату брони → запись подтверждена. */
+export async function confirmPayment(id: string): Promise<void> {
+  await api.post(`/api/admin/requests/${id}/confirm-payment`);
 }
 
 export async function updateRequest(

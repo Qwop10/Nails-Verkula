@@ -53,6 +53,8 @@ export async function initSchema() {
   await pool.query(`ALTER TABLE requests ADD COLUMN IF NOT EXISTS reminded2h BOOLEAN NOT NULL DEFAULT false;`);
   // Фото-референсы клиента (пути /uploads/...), до 3 шт.
   await pool.query(`ALTER TABLE requests ADD COLUMN IF NOT EXISTS photos JSONB NOT NULL DEFAULT '[]'::jsonb;`);
+  // Чек об оплате брони (путь /uploads/...), который клиент прислал на проверку.
+  await pool.query(`ALTER TABLE requests ADD COLUMN IF NOT EXISTS receipt TEXT;`);
 
   // Чат: переписка клиента и мастера.
   await pool.query(`
@@ -129,6 +131,7 @@ function rowToRequest(r) {
     bookingPaid: r.booking_paid,
     paymentId: r.payment_id || undefined,
     photos: r.photos || [],
+    receipt: r.receipt || '',
     createdAt: r.created_at,
     updatedAt: r.updated_at,
   };
@@ -472,6 +475,16 @@ export async function updateRequest(id, { mainId, addonIds, time, masterNote }) 
            total = $5, master_note = $6, status = 'payment_pending', updated_at = now()
      WHERE id = $1 RETURNING *`,
     [id, mainId || null, JSON.stringify(addonIds || []), time || null, total, masterNote || null]
+  );
+  return rowToRequest(rows[0]);
+}
+
+/** Клиент прислал чек об оплате → статус «на проверке». Переход только из payment_pending. */
+export async function submitReceipt(id, receiptPath) {
+  const { rows } = await pool.query(
+    `UPDATE requests SET receipt = $2, status = 'receipt_review', updated_at = now()
+     WHERE id = $1 AND status = 'payment_pending' RETURNING *`,
+    [id, receiptPath || null]
   );
   return rowToRequest(rows[0]);
 }

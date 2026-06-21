@@ -17,6 +17,7 @@ export interface ClientRequest {
   bookingPaid: boolean;
   wishes?: string;
   masterNote?: string;
+  receipt?: string;
   createdAt: string;
 }
 
@@ -33,6 +34,7 @@ interface ServerRequest {
   bookingPaid: boolean;
   wishes?: string;
   masterNote?: string;
+  receipt?: string;
   createdAt: string;
 }
 
@@ -52,6 +54,7 @@ function toClientRequest(r: ServerRequest): ClientRequest {
     bookingPaid: r.bookingPaid,
     wishes: r.wishes,
     masterNote: r.masterNote,
+    receipt: r.receipt,
     createdAt: r.createdAt,
   };
 }
@@ -100,6 +103,12 @@ export async function withdrawRequest(id: string): Promise<void> {
 
 export async function cancelRequest(id: string): Promise<{ refunded: boolean }> {
   return api.post<{ refunded: boolean }>(`/api/requests/${id}/cancel`);
+}
+
+/** Отправить чек об оплате брони на проверку мастеру (data URL изображения). */
+export async function submitReceipt(id: string, receipt: string): Promise<ClientRequest> {
+  const r = await api.post<ServerRequest>(`/api/requests/${id}/submit-receipt`, { receipt });
+  return toClientRequest(r);
 }
 
 /**

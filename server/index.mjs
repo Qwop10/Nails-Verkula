@@ -332,6 +332,36 @@ app.post('/api/requests/:id/pay-booking', auth, async (req, res) => {
   }
 });
 
+// Клиент прислал чек об оплате брони → на проверку мастеру.
+app.post('/api/requests/:id/submit-receipt', auth, async (req, res) => {
+  try {
+    const r = await db.getRequest(req.params.id);
+    if (!r) return res.status(404).json({ success: false, error: 'not_found' });
+    if (String(r.clientId) !== String(req.user.id)) return res.status(403).json({ success: false, error: 'forbidden' });
+    if (r.status !== 'payment_pending') return res.status(409).json({ success: false, error: 'bad_status' });
+
+    const receiptPath = await saveDataUrl(req.body?.receipt, 'receipt');
+    if (!receiptPath) return res.status(400).json({ success: false, error: 'no_receipt', message: 'Приложите фото чека' });
+
+    const updated = await db.submitReceipt(r.id, receiptPath);
+    if (!updated) return res.status(409).json({ success: false, error: 'bad_status' });
+
+    // Уведомляем мастера: клиент прислал чек, нужно проверить.
+    const who = escapeHtml(updated.clientName || 'Клиент');
+    const caption =
+      `🧾 <b>Клиент прислал чек, проверьте его</b>\n${who}\n` +
+      `${prettyDate(updated.date)} · ${updated.time} · ${labelsOf(updated)}\n` +
+      `Бронь ${fmtRu(updated.bookingFee)}`;
+    const kb = { reply_markup: { inline_keyboard: [[{ text: 'Открыть заявки', web_app: { url: APP_URL } }]] } };
+    for (const mid of MASTER_IDS) {
+      sendPhoto(mid, `${APP_URL}${receiptPath}`, caption, kb)
+        .then((okPhoto) => { if (!okPhoto) sendMessage(mid, caption, kb); })
+        .catch(() => sendMessage(mid, caption, kb).catch(() => {}));
+    }
+    ok(res, updated);
+  } catch (e) { console.error('submit-receipt error:', e); res.status(500).json({ success: false, error: 'server_error' }); }
+});
+
 // ============================ MASTER ============================
 
 app.get('/api/admin/requests', auth, requireMaster, async (_req, res) => {
@@ -408,13 +438,27 @@ app.post('/api/admin/requests/:id/approve', auth, requireMaster, async (req, res
     if (!r) return res.status(409).json({ success: false, error: 'bad_status' });
     const caption =
       `✅ <b>Заявка одобрена</b>\n${prettyDate(r.date)} · ${r.time} · ${labelsOf(r)}\n` +
-      `К оплате бронь ${fmtRu(r.bookingFee)}. Откройте приложение, чтобы оплатить 👇`;
-    const keyboard = { reply_markup: { inline_keyboard: [[{ text: '💳 Оплатить бронь', web_app: { url: APP_URL } }]] } };
+      `К оплате бронь ${fmtRu(r.bookingFee)}. Откройте приложение, и перейдите в профиль чтобы оплатить 👇`;
+    const keyboard = { reply_markup: { inline_keyboard: [[{ text: '💳 Оплатить', web_app: { url: `${APP_URL}/profile` } }]] } };
     // С картинкой; если фото не отправилось — обычным текстом.
     const photoOk = await sendPhoto(r.clientId, `${APP_URL}/photo/approved.jpg`, caption, keyboard);
     if (!photoOk) await sendMessage(r.clientId, caption, keyboard);
     ok(res, r);
   } catch (e) { console.error(e); res.status(500).json({ success: false, error: 'server_error' }); }
+});
+
+// Мастер проверил чек и подтверждает оплату брони → запись подтверждена.
+app.post('/api/admin/requests/:id/confirm-payment', auth, requireMaster, async (req, res) => {
+  try {
+    const r = await db.getRequest(req.params.id);
+    if (!r) return res.status(404).json({ success: false, error: 'not_found' });
+    if (r.status !== 'receipt_review' && r.status !== 'payment_pending') {
+      return res.status(409).json({ success: false, error: 'bad_status' });
+    }
+    const updated = await db.markBookingPaid(r.id, 'manual');
+    await notifyConfirmed(updated);
+    ok(res, updated);
+  } catch (e) { console.error('confirm-payment error:', e); res.status(500).json({ success: false, error: 'server_error' }); }
 });
 
 // Правка (состав/время) → ожидает оплаты
@@ -429,8 +473,8 @@ app.patch('/api/admin/requests/:id', auth, requireMaster, async (req, res) => {
     await sendMessage(
       r.clientId,
       `✏️ <b>Мастер уточнил заявку</b>\n${prettyDate(r.date)} · ${r.time} · ${labelsOf(r)}\n` +
-        `Новая сумма: ${fmtRu(r.total)}. К оплате бронь ${fmtRu(r.bookingFee)} 👇`,
-      { reply_markup: { inline_keyboard: [[{ text: '💳 Оплатить бронь', web_app: { url: APP_URL } }]] } }
+        `Новая сумма: ${fmtRu(r.total)}. К оплате бронь ${fmtRu(r.bookingFee)}. Откройте профиль, чтобы оплатить 👇`,
+      { reply_markup: { inline_keyboard: [[{ text: '💳 Оплатить', web_app: { url: `${APP_URL}/profile` } }]] } }
     );
     ok(res, r);
   } catch (e) { console.error(e); res.status(500).json({ success: false, error: 'server_error' }); }
@@ -439,7 +483,7 @@ app.patch('/api/admin/requests/:id', auth, requireMaster, async (req, res) => {
 // Отклонить
 app.post('/api/admin/requests/:id/reject', auth, requireMaster, async (req, res) => {
   try {
-    const r = await db.setStatus(req.params.id, 'rejected', ['pending_review', 'payment_pending']);
+    const r = await db.setStatus(req.params.id, 'rejected', ['pending_review', 'payment_pending', 'receipt_review']);
     if (!r) return res.status(409).json({ success: false, error: 'bad_status' });
     const rejectText = `К сожалению, мастер не может принять вашу заявку.`;
     const photoOk = await sendPhoto(r.clientId, `${APP_URL}/photo/rejected.jpg`, rejectText);
