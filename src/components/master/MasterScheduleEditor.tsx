@@ -24,7 +24,7 @@ const PLACEHOLDER = `1(ср) 10:00;12:00;14:00;16:00
 5(вс) 12:00;14:00;16:00
 …`;
 
-export const MasterScheduleEditor: React.FC = () => {
+export const MasterScheduleEditor: React.FC<{ onSaved?: () => void }> = ({ onSaved }) => {
   const notify = useNotification();
   const [text, setText] = useState('');
   const [saving, setSaving] = useState(false);
@@ -49,6 +49,7 @@ export const MasterScheduleEditor: React.FC = () => {
     try {
       const { saved } = await saveMonthSchedule(sel.year, sel.month, parsed.entries);
       notify.success(`Сохранено: ${saved} дней на ${MONTHS[sel.month - 1]}`);
+      onSaved?.();
     } catch {
       notify.error('Не удалось сохранить расписание');
     } finally {

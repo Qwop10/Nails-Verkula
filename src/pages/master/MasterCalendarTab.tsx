@@ -4,7 +4,7 @@
  * Мастер выбирает день → видит записи на него, может изменить или удалить.
  * Внизу — редактор расписания по дням (вставка текста).
  */
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useAsyncData } from '../../hooks';
 import { useNotification } from '../../store';
 import { Button } from '../../components/ui';
@@ -13,6 +13,8 @@ import { MasterScheduleEditor } from '../../components/master/MasterScheduleEdit
 import {
   getMasterRequests,
   cancelRequestByMaster,
+  getOpenDates,
+  getDaySlots,
   serviceLabels,
   requestTotal,
   allSlots,
@@ -62,10 +64,34 @@ export const MasterCalendarTab: React.FC = () => {
   }, [all]);
 
   const today = useMemo(() => new Date(), []);
+  const todayIso = useMemo(() => iso(today.getFullYear(), today.getMonth(), today.getDate()), [today]);
   const [ym, setYm] = useState(today.getFullYear() * 12 + today.getMonth());
   const year = Math.floor(ym / 12);
   const month = ym % 12;
   const [selected, setSelected] = useState<string | null>(null);
+
+  // Открытые для записи даты (из расписания мастера) — чтобы видеть рабочие дни.
+  const [openDates, setOpenDates] = useState<Set<string>>(new Set());
+  useEffect(() => {
+    const from = new Date();
+    const to = new Date();
+    to.setDate(to.getDate() + 120);
+    const isoOf = (d: Date) => d.toISOString().slice(0, 10);
+    getOpenDates(isoOf(from), isoOf(to))
+      .then((dates) => setOpenDates(new Set(dates)))
+      .catch(() => {});
+  }, [reloadKey]);
+
+  // Свободные слоты на выбранный день (показываем мастеру открытые окошки).
+  const [freeSlots, setFreeSlots] = useState<string[]>([]);
+  useEffect(() => {
+    if (!selected) { setFreeSlots([]); return; }
+    let active = true;
+    getDaySlots(selected)
+      .then((r) => { if (active) setFreeSlots((r.slots || []).filter((s) => !(r.taken || []).includes(s))); })
+      .catch(() => { if (active) setFreeSlots([]); });
+    return () => { active = false; };
+  }, [selected, reloadKey]);
 
   const cells = useMemo(() => {
     const first = new Date(year, month, 1);
@@ -109,13 +135,20 @@ export const MasterCalendarTab: React.FC = () => {
             const dIso = iso(year, month, d);
             const count = byDate.get(dIso)?.length ?? 0;
             const sel = selected === dIso;
+            const past = dIso < todayIso;
+            const open = openDates.has(dIso);
+            const cls = sel
+              ? 'bg-brand text-[color:rgb(var(--brand-contrast))]'
+              : past
+              ? 'text-hint/40'
+              : open || count
+              ? 'text-fg bg-brand/10'
+              : 'text-hint';
             return (
               <button
                 key={d}
                 onClick={() => setSelected(dIso)}
-                className={`relative mx-auto w-8 h-8 rounded-full text-xs flex items-center justify-center transition-colors ${
-                  sel ? 'bg-brand text-[color:rgb(var(--brand-contrast))]' : count ? 'text-fg bg-brand/10' : 'text-fg hover:bg-brand/5'
-                }`}
+                className={`relative mx-auto w-8 h-8 rounded-full text-xs flex items-center justify-center transition-colors ${cls}`}
               >
                 {d}
                 {count > 0 && !sel && (
@@ -125,6 +158,11 @@ export const MasterCalendarTab: React.FC = () => {
             );
           })}
         </div>
+        {/* Легенда */}
+        <div className="flex items-center gap-4 mt-3 text-[10px] text-muted">
+          <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-full bg-brand/10 inline-block" /> рабочий день</span>
+          <span className="flex items-center gap-1"><span className="w-1 h-1 rounded-full bg-brand inline-block" /> есть записи</span>
+        </div>
       </div>
 
       {/* Записи на выбранный день */}
@@ -133,9 +171,26 @@ export const MasterCalendarTab: React.FC = () => {
           <p className="text-[11px] uppercase tracking-wider text-muted mb-2">
             Записи на {selected.split('-').reverse().join('.')}
           </p>
+
+          {/* Свободные окошки в этот день (из расписания) */}
+          <div className="rounded-card bg-card-2 border border-line px-4 py-2.5 mb-3">
+            {freeSlots.length > 0 ? (
+              <>
+                <p className="text-[11px] text-muted mb-1">Свободные окошки:</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {freeSlots.map((s) => (
+                    <span key={s} className="text-[11px] text-brand border border-brand/50 rounded-full px-2 py-0.5">{s}</span>
+                  ))}
+                </div>
+              </>
+            ) : (
+              <p className="text-[11px] text-hint">Этот день закрыт для записи (нет свободных окошек). Добавьте его в расписании ниже.</p>
+            )}
+          </div>
+
           {isLoading && <p className="text-xs text-hint">Загрузка…</p>}
           {!isLoading && dayList.length === 0 && (
-            <p className="text-xs text-hint">На этот день записей нет.</p>
+            <p className="text-xs text-hint">Записей на этот день нет.</p>
           )}
           {dayList.map((r) => (
             <div key={r.id} className="rounded-card bg-card border border-line p-4 mb-2">
@@ -159,7 +214,7 @@ export const MasterCalendarTab: React.FC = () => {
 
       {/* Расписание по дням */}
       <p className="text-[11px] uppercase tracking-wider text-muted mb-2 mt-6">Расписание по дням</p>
-      <MasterScheduleEditor />
+      <MasterScheduleEditor onSaved={reload} />
 
       {editTarget && (
         <EditRequestModal
