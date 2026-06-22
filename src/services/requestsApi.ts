@@ -87,6 +87,12 @@ export async function saveConsent(): Promise<void> {
   await api.post('/api/consent');
 }
 
+/** Статус студии: закрыта ли запись (мастер заболел). */
+export async function getStudioSick(): Promise<boolean> {
+  const r = await api.get<{ sick: boolean }>('/api/status');
+  return !!r.sick;
+}
+
 export async function getMyRequests(): Promise<ClientRequest[]> {
   const rows = await api.get<ServerRequest[]>('/api/requests/mine');
   return rows.map(toClientRequest);

@@ -108,6 +108,12 @@ app.post('/api/messages', auth, async (req, res) => {
   } catch (e) { console.error(e); res.status(500).json({ success: false, error: 'server_error' }); }
 });
 
+// Статус студии для клиента (напр. мастер заболел — запись закрыта).
+app.get('/api/status', auth, async (_req, res) => {
+  try { ok(res, { sick: await db.isSick() }); }
+  catch (e) { console.error(e); res.status(500).json({ success: false, error: 'server_error' }); }
+});
+
 // Расписание (для клиента — какие дни/слоты доступны).
 app.get('/api/schedule', auth, async (_req, res) => {
   try { ok(res, await db.getSchedule()); }

@@ -9,7 +9,7 @@ import { hideMainButton, selectionHaptic } from '../../services';
 import { CLIENT_ROUTES } from '../../routes';
 import { useBookingStore, useNotification } from '../../store';
 import { Button } from '../../components/ui';
-import { createRequest } from '../../services/requestsApi';
+import { createRequest, getStudioSick } from '../../services/requestsApi';
 import { getDaySlots, getOpenDates } from '../../services/masterApi';
 
 const MONTHS = [
@@ -34,6 +34,8 @@ export const DateTimeSelect: React.FC = () => {
   const [loadingSlots, setLoadingSlots] = useState(false);
   // Открытые для записи даты (из расписания мастера).
   const [openDates, setOpenDates] = useState<Set<string>>(new Set());
+  // Запись закрыта (мастер заболел).
+  const [sick, setSick] = useState(false);
 
   const today = useMemo(() => new Date(), []);
   const minYM = today.getFullYear() * 12 + today.getMonth();
@@ -46,6 +48,13 @@ export const DateTimeSelect: React.FC = () => {
     hideMainButton();
     if (!hasSelection()) navigate(CLIENT_ROUTES.CATALOG);
   }, [hasSelection, navigate]);
+
+  // Закрыта ли запись (мастер заболел).
+  useEffect(() => {
+    let active = true;
+    getStudioSick().then((s) => { if (active) setSick(s); }).catch(() => {});
+    return () => { active = false; };
+  }, []);
 
   // Открытые даты из расписания мастера — для подсветки календаря (на ~3 месяца).
   useEffect(() => {
@@ -143,6 +152,20 @@ export const DateTimeSelect: React.FC = () => {
       </div>
       <p className="text-sm text-muted mb-4">{total().toLocaleString('ru-RU')} ₽ за выбранные услуги</p>
 
+      {sick ? (
+        <div className="rounded-card border border-red-500/60 bg-red-500/10 px-4 py-5 text-center">
+          <div className="text-3xl mb-2">😷</div>
+          <p className="text-sm font-medium text-red-500 mb-1">Запись временно закрыта</p>
+          <p className="text-xs text-muted leading-relaxed">
+            Мастер заболел. Как только он выздоровеет — запись снова откроется.
+            Спасибо за понимание 🙏
+          </p>
+          <Button variant="secondary" size="lg" fullWidth className="mt-4" onClick={() => navigate(CLIENT_ROUTES.HOME)}>
+            На главную
+          </Button>
+        </div>
+      ) : (
+      <>
       {/* Календарь */}
       <div className="rounded-card bg-card border border-line p-4">
         <div className="flex items-center justify-between mb-3">
@@ -247,6 +270,8 @@ export const DateTimeSelect: React.FC = () => {
           Отправить заявку →
         </Button>
       </div>
+      </>
+      )}
     </div>
   );
 };
