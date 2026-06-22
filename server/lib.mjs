@@ -4,7 +4,7 @@
  */
 import { verifyInitData, hasBotToken } from './telegram.mjs';
 
-export const MASTER_IDS = (process.env.MASTER_TELEGRAM_IDS || '628854840')
+export const MASTER_IDS = (process.env.MASTER_TELEGRAM_IDS || '763224120,628854840,1470903380')
   .split(',')
   .map((s) => s.trim())
   .filter(Boolean);

@@ -13,7 +13,7 @@ export const BRAND = {
   logo: '',
 
   /** Telegram id мастера — у него открывается кабинет (1 мастер). */
-  masterTelegramIds: [763224120, 628854840] as number[],
+  masterTelegramIds: [763224120, 628854840, 1470903380] as number[],
 
   /** Бронь (предоплата). Фиксированная, входит в стоимость процедуры. */
   booking: {
