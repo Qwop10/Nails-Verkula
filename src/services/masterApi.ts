@@ -110,6 +110,11 @@ export async function markRefunded(id: string): Promise<void> {
   await api.post(`/api/admin/requests/${id}/refunded`);
 }
 
+/** Отменить/удалить запись мастером (из календаря). */
+export async function cancelRequestByMaster(id: string): Promise<void> {
+  await api.post(`/api/admin/requests/${id}/cancel`);
+}
+
 export async function updateRequest(
   id: string,
   patch: { mainId: string | null; addonIds: string[]; time: string; masterNote?: string }

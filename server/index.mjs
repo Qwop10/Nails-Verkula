@@ -517,6 +517,25 @@ app.post('/api/admin/requests/:id/reject', auth, requireMaster, async (req, res)
   } catch (e) { console.error(e); res.status(500).json({ success: false, error: 'server_error' }); }
 });
 
+// Удалить/отменить запись мастером (из календаря). Если бронь оплачена —
+// помечаем возврат и уведомляем клиента об отмене.
+app.post('/api/admin/requests/:id/cancel', auth, requireMaster, async (req, res) => {
+  try {
+    const r = await db.getRequest(req.params.id);
+    if (!r) return res.status(404).json({ success: false, error: 'not_found' });
+    const updated = await db.setStatus(req.params.id, 'cancelled');
+    if (r.bookingPaid) await db.setRefundPending(req.params.id, true);
+    const refundLine = r.bookingPaid
+      ? `\nБронь ${fmtRu(r.bookingFee)} вернём переводом в ближайшее время.`
+      : '';
+    sendMessage(
+      r.clientId,
+      `❌ <b>Запись отменена мастером</b>\n${prettyDate(r.date)} · ${r.time} · ${labelsOf(r)}${refundLine}`
+    ).catch(() => {});
+    ok(res, updated);
+  } catch (e) { console.error(e); res.status(500).json({ success: false, error: 'server_error' }); }
+});
+
 // Рассылка
 app.post('/api/broadcast', auth, requireMaster, async (req, res) => {
   try {

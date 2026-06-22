@@ -14,7 +14,6 @@ const writeSeen = (m: Record<string, string>) => { try { localStorage.setItem(SE
 import { useNotification } from '../../store';
 import { Button } from '../../components/ui';
 import { EditRequestModal } from '../../components/EditRequestModal';
-import { MasterScheduleEditor } from '../../components/master/MasterScheduleEditor';
 import {
   getMasterRequests,
   getStats,
@@ -321,9 +320,6 @@ export const MasterRequestsTab: React.FC = () => {
       )}
 
       {!isLoading && !error && current.map((r) => <Card key={r.id} r={r} />)}
-
-      <p className="text-[11px] uppercase tracking-wider text-muted mb-2 mt-4">Расписание по дням</p>
-      <MasterScheduleEditor />
 
       {editTarget && (
         <EditRequestModal
