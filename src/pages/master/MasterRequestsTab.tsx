@@ -273,14 +273,14 @@ export const MasterRequestsTab: React.FC = () => {
         </div>
       )}
       <Button
-        variant={sick ? 'primary' : 'ghost'}
-        size="sm"
+        variant={sick ? 'primary' : 'danger'}
+        size="lg"
         fullWidth
         isLoading={sickBusy}
         onClick={handleToggleSick}
-        className="mb-4"
+        className="mb-4 font-semibold shadow-md"
       >
-        {sick ? 'Открыть запись (выздоровела)' : '😷 Заболела — закрыть запись'}
+        {sick ? '✅ Открыть запись (выздоровела)' : '😷 Заболела — закрыть запись'}
       </Button>
 
       {/* Вкладки по статусам */}
