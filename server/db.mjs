@@ -356,6 +356,47 @@ export async function setMonthSchedule(year, month, entries) {
   return saved;
 }
 
+/** Добавить время в конкретную дату (создаёт день, если его не было). */
+export async function addDateSlot(dateIso, time) {
+  await pool.query(
+    `INSERT INTO schedule_dates (d, slots) VALUES ($1, to_jsonb(ARRAY[$2]::text[]))
+     ON CONFLICT (d) DO UPDATE SET slots = (
+       SELECT to_jsonb(array(
+         SELECT DISTINCT t FROM jsonb_array_elements_text(schedule_dates.slots || to_jsonb($2::text)) AS t ORDER BY t))
+     )`,
+    [dateIso, time]
+  );
+}
+
+/** Удалить время из конкретной даты. */
+export async function removeDateSlot(dateIso, time) {
+  await pool.query(
+    `UPDATE schedule_dates SET slots = (
+       SELECT to_jsonb(array(
+         SELECT t FROM jsonb_array_elements_text(slots) AS t WHERE t <> $2 ORDER BY t))
+     ) WHERE d = $1`,
+    [dateIso, time]
+  );
+}
+
+/** Сделать дату рабочей (slots по умолчанию, если пусто) или выходной (slots []). */
+export async function setDateWorking(dateIso, working, defaults = []) {
+  if (working) {
+    await pool.query(
+      `INSERT INTO schedule_dates (d, slots) VALUES ($1, $2::jsonb)
+       ON CONFLICT (d) DO UPDATE SET slots =
+         CASE WHEN jsonb_array_length(schedule_dates.slots) = 0 THEN $2::jsonb ELSE schedule_dates.slots END`,
+      [dateIso, JSON.stringify(defaults)]
+    );
+  } else {
+    await pool.query(
+      `INSERT INTO schedule_dates (d, slots) VALUES ($1, '[]'::jsonb)
+       ON CONFLICT (d) DO UPDATE SET slots = '[]'::jsonb`,
+      [dateIso]
+    );
+  }
+}
+
 /** Открытые даты в диапазоне (для подсветки календаря у клиента). */
 export async function getOpenDates(fromIso, toIso) {
   if (await isSick()) return []; // мастер заболел — запись закрыта

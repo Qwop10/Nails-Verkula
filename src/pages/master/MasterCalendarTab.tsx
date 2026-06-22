@@ -15,6 +15,9 @@ import {
   cancelRequestByMaster,
   getOpenDates,
   getDaySlots,
+  setDateWorking,
+  addDateSlot,
+  removeDateSlot,
   serviceLabels,
   requestTotal,
   allSlots,
@@ -82,16 +85,45 @@ export const MasterCalendarTab: React.FC = () => {
       .catch(() => {});
   }, [reloadKey]);
 
-  // Свободные слоты на выбранный день (показываем мастеру открытые окошки).
-  const [freeSlots, setFreeSlots] = useState<string[]>([]);
+  // Слоты выбранного дня: все настроенные (slots) и занятые записями (taken).
+  const [daySlots, setDaySlots] = useState<string[]>([]);
+  const [dayTaken, setDayTaken] = useState<Set<string>>(new Set());
+  const [newTime, setNewTime] = useState('');
   useEffect(() => {
-    if (!selected) { setFreeSlots([]); return; }
+    if (!selected) { setDaySlots([]); setDayTaken(new Set()); return; }
     let active = true;
     getDaySlots(selected)
-      .then((r) => { if (active) setFreeSlots((r.slots || []).filter((s) => !(r.taken || []).includes(s))); })
-      .catch(() => { if (active) setFreeSlots([]); });
+      .then((r) => { if (!active) return; setDaySlots(r.slots || []); setDayTaken(new Set(r.taken || [])); })
+      .catch(() => { if (active) { setDaySlots([]); setDayTaken(new Set()); } });
     return () => { active = false; };
   }, [selected, reloadKey]);
+
+  const dayWorking = daySlots.length > 0;
+
+  const handleSetWorking = async (working: boolean) => {
+    if (!selected) return;
+    try {
+      await setDateWorking(selected, working);
+      notify.success(working ? 'День сделан рабочим' : 'День сделан выходным');
+      reload();
+    } catch { notify.error('Не удалось изменить день'); }
+  };
+  const handleAddTime = async () => {
+    if (!selected || !/^\d{2}:\d{2}$/.test(newTime)) { notify.error('Укажите время в формате ЧЧ:ММ'); return; }
+    try {
+      await addDateSlot(selected, newTime);
+      setNewTime('');
+      reload();
+    } catch { notify.error('Не удалось добавить время'); }
+  };
+  const handleRemoveTime = async (time: string) => {
+    if (!selected) return;
+    if (dayTaken.has(time)) { notify.error('На это время уже есть запись — сначала отмените её'); return; }
+    try {
+      await removeDateSlot(selected, time);
+      reload();
+    } catch { notify.error('Не удалось удалить время'); }
+  };
 
   const cells = useMemo(() => {
     const first = new Date(year, month, 1);
@@ -158,11 +190,9 @@ export const MasterCalendarTab: React.FC = () => {
             );
           })}
         </div>
-        {/* Легенда */}
-        <div className="flex items-center gap-4 mt-3 text-[10px] text-muted">
-          <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-full bg-brand/10 inline-block" /> рабочий день</span>
-          <span className="flex items-center gap-1"><span className="w-1 h-1 rounded-full bg-brand inline-block" /> есть записи</span>
-        </div>
+        <p className="text-[10px] text-muted mt-3 text-center">
+          Выберите день, чтобы настроить рабочее время и посмотреть записи
+        </p>
       </div>
 
       {/* Записи на выбранный день */}
@@ -172,19 +202,59 @@ export const MasterCalendarTab: React.FC = () => {
             Записи на {selected.split('-').reverse().join('.')}
           </p>
 
-          {/* Свободные окошки в этот день (из расписания) */}
-          <div className="rounded-card bg-card-2 border border-line px-4 py-2.5 mb-3">
-            {freeSlots.length > 0 ? (
+          {/* Редактор рабочего времени дня (связан с календарём клиента) */}
+          <div className="rounded-card bg-card-2 border border-line px-4 py-3 mb-3">
+            <div className="flex gap-2 mb-3">
+              <button
+                onClick={() => handleSetWorking(true)}
+                className={`flex-1 py-1.5 rounded-full text-xs font-medium border transition-colors ${
+                  dayWorking ? 'bg-brand text-[color:rgb(var(--brand-contrast))] border-brand' : 'bg-card text-muted border-line'
+                }`}
+              >
+                Рабочий день
+              </button>
+              <button
+                onClick={() => handleSetWorking(false)}
+                className={`flex-1 py-1.5 rounded-full text-xs font-medium border transition-colors ${
+                  !dayWorking ? 'bg-brand text-[color:rgb(var(--brand-contrast))] border-brand' : 'bg-card text-muted border-line'
+                }`}
+              >
+                Выходной
+              </button>
+            </div>
+
+            {dayWorking && (
               <>
-                <p className="text-[11px] text-muted mb-1">Свободные окошки:</p>
-                <div className="flex flex-wrap gap-1.5">
-                  {freeSlots.map((s) => (
-                    <span key={s} className="text-[11px] text-brand border border-brand/50 rounded-full px-2 py-0.5">{s}</span>
-                  ))}
+                <p className="text-[11px] text-muted mb-1.5">Окошки времени (× — удалить):</p>
+                <div className="flex flex-wrap gap-1.5 mb-2">
+                  {daySlots.map((s) => {
+                    const booked = dayTaken.has(s);
+                    return (
+                      <span
+                        key={s}
+                        className={`inline-flex items-center gap-1 text-[11px] rounded-full px-2 py-0.5 border ${
+                          booked ? 'text-hint border-line bg-card' : 'text-brand border-brand/50'
+                        }`}
+                      >
+                        {s}{booked && ' (занято)'}
+                        {!booked && (
+                          <button onClick={() => handleRemoveTime(s)} className="text-red-500 leading-none" aria-label={`Удалить ${s}`}>×</button>
+                        )}
+                      </span>
+                    );
+                  })}
+                  {daySlots.length === 0 && <span className="text-[11px] text-hint">Окошек пока нет — добавьте ниже.</span>}
+                </div>
+                <div className="flex gap-2">
+                  <input
+                    type="time"
+                    value={newTime}
+                    onChange={(e) => setNewTime(e.target.value)}
+                    className="flex-1 min-w-0 bg-card border border-line rounded-tile px-3 py-1.5 text-sm text-fg outline-none focus:border-brand"
+                  />
+                  <Button variant="secondary" size="sm" onClick={handleAddTime}>Добавить</Button>
                 </div>
               </>
-            ) : (
-              <p className="text-[11px] text-hint">Этот день закрыт для записи (нет свободных окошек). Добавьте его в расписании ниже.</p>
             )}
           </div>
 

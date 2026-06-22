@@ -157,6 +157,19 @@ export async function getOpenDates(from: string, to: string): Promise<string[]> 
   return api.get<string[]>(`/api/open-dates?from=${from}&to=${to}`);
 }
 
+/** Сделать конкретную дату рабочей/выходной. */
+export async function setDateWorking(date: string, working: boolean): Promise<void> {
+  await api.post('/api/admin/schedule/date/working', { date, working });
+}
+
+/** Добавить/удалить время в конкретной дате. */
+export async function addDateSlot(date: string, time: string): Promise<void> {
+  await api.post('/api/admin/schedule/date/slot', { date, time, action: 'add' });
+}
+export async function removeDateSlot(date: string, time: string): Promise<void> {
+  await api.post('/api/admin/schedule/date/slot', { date, time, action: 'remove' });
+}
+
 /** Сохранить расписание на месяц (год, месяц 1–12, список {day,slots}). */
 export async function saveMonthSchedule(
   year: number,

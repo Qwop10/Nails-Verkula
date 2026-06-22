@@ -144,6 +144,34 @@ app.post('/api/admin/schedule/month', auth, requireMaster, async (req, res) => {
   } catch (e) { console.error(e); res.status(500).json({ success: false, error: 'server_error' }); }
 });
 
+// Набор времён по умолчанию для дня, который мастер делает рабочим.
+const DEFAULT_DAY_SLOTS = ['10:00', '11:00', '12:00', '13:00'];
+
+// Редактирование конкретной даты мастером (рабочий день/выходной).
+app.post('/api/admin/schedule/date/working', auth, requireMaster, async (req, res) => {
+  try {
+    const date = String(req.body?.date || '');
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return res.status(400).json({ success: false, error: 'bad_date' });
+    await db.setDateWorking(date, !!req.body?.working, DEFAULT_DAY_SLOTS);
+    ok(res, await db.getDayAvailability(date));
+  } catch (e) { console.error(e); res.status(500).json({ success: false, error: 'server_error' }); }
+});
+
+// Добавить/удалить время в конкретной дате.
+app.post('/api/admin/schedule/date/slot', auth, requireMaster, async (req, res) => {
+  try {
+    const date = String(req.body?.date || '');
+    const time = String(req.body?.time || '');
+    const action = req.body?.action;
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || !/^\d{2}:\d{2}$/.test(time)) {
+      return res.status(400).json({ success: false, error: 'bad_input' });
+    }
+    if (action === 'remove') await db.removeDateSlot(date, time);
+    else await db.addDateSlot(date, time);
+    ok(res, await db.getDayAvailability(date));
+  } catch (e) { console.error(e); res.status(500).json({ success: false, error: 'server_error' }); }
+});
+
 // Доступные слоты на конкретную дату (?date=YYYY-MM-DD).
 app.get('/api/slots', auth, async (req, res) => {
   try {
