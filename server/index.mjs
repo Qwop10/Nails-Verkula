@@ -171,6 +171,9 @@ app.post('/api/admin/schedule/slot', auth, requireMaster, async (req, res) => {
 app.post('/api/requests', auth, async (req, res) => {
   try {
     const clientId = String(req.user.id);
+    if (await db.isSick()) {
+      return res.status(409).json({ success: false, error: 'sick', message: 'Мастер временно не принимает записи' });
+    }
     if ((await db.countActiveClientRequests(clientId)) >= 3) {
       return res.status(409).json({ success: false, error: 'limit', message: 'Лимит: максимум 3 активные заявки' });
     }
@@ -275,8 +278,10 @@ app.post('/api/requests/:id/cancel', auth, async (req, res) => {
     const updated = await db.setStatus(req.params.id, 'cancelled');
 
     // Оплата ручная (перевод по реквизитам) — авто-возврата нет.
-    // Если отмена вовремя и бронь оплачена, мастер вернёт её переводом вручную.
+    // Если отмена вовремя и бронь оплачена, мастер вернёт её переводом вручную
+    // (помечаем заявку — попадёт во вкладку «Возврат» у мастера).
     const refunded = refundable && r.bookingPaid;
+    if (refunded) await db.setRefundPending(req.params.id, true);
 
     // Контакты клиента — чтобы мастер мог связаться (и вернуть бронь переводом).
     const phone = r.clientPhone ? escapeHtml(r.clientPhone) : '—';
@@ -395,6 +400,54 @@ app.get('/api/admin/stats', auth, requireMaster, async (_req, res) => {
     const revenue = all.filter((r) => r.bookingPaid).reduce((s, r) => s + r.total, 0);
     ok(res, { today, pending, revenue });
   } catch (e) { res.status(500).json({ success: false, error: 'server_error' }); }
+});
+
+// Режим «мастер заболел»: статус.
+app.get('/api/admin/sick', auth, requireMaster, async (_req, res) => {
+  try { ok(res, { sick: await db.isSick() }); }
+  catch (e) { console.error(e); res.status(500).json({ success: false, error: 'server_error' }); }
+});
+
+// Режим «мастер заболел»: включить/выключить.
+// При включении — закрываем запись и отменяем все активные заявки;
+// у тех, кто оплатил бронь, помечаем возврат и уведомляем клиента.
+app.post('/api/admin/sick', auth, requireMaster, async (req, res) => {
+  try {
+    const sick = !!req.body?.sick;
+    await db.setSetting('sick', sick ? '1' : '0');
+    let cancelled = 0;
+    if (sick) {
+      const affected = await db.cancelAllActiveForSick();
+      cancelled = affected.length;
+      for (const r of affected) {
+        const refundLine = r.bookingPaid
+          ? `\nБронь ${fmtRu(r.bookingFee)} вернём переводом в ближайшее время.`
+          : '';
+        sendMessage(
+          r.clientId,
+          `😷 <b>Запись отменена</b>\nК сожалению, мастер заболел и временно не принимает.\n` +
+            `${prettyDate(r.date)} · ${r.time} · ${labelsOf(r)}${refundLine}\n\n` +
+            `Приносим извинения. Как только мастер выздоровеет — запись снова откроется.`
+        ).catch(() => {});
+      }
+    }
+    ok(res, { sick, cancelled });
+  } catch (e) { console.error('sick error:', e); res.status(500).json({ success: false, error: 'server_error' }); }
+});
+
+// Список заявок, по которым нужно вернуть бронь.
+app.get('/api/admin/refunds', auth, requireMaster, async (_req, res) => {
+  try { ok(res, await db.getRefundsPending()); }
+  catch (e) { console.error(e); res.status(500).json({ success: false, error: 'server_error' }); }
+});
+
+// Мастер вернул деньги клиенту → убираем из списка возвратов.
+app.post('/api/admin/requests/:id/refunded', auth, requireMaster, async (req, res) => {
+  try {
+    const r = await db.setRefundPending(req.params.id, false);
+    if (!r) return res.status(404).json({ success: false, error: 'not_found' });
+    ok(res, r);
+  } catch (e) { console.error(e); res.status(500).json({ success: false, error: 'server_error' }); }
 });
 
 // Одобрить → ожидает оплаты

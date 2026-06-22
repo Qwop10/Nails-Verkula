@@ -19,9 +19,11 @@ export interface MasterRequest {
   time: string;
   wishes?: string;
   bookingPaid: boolean;
+  bookingFee: number;
   masterNote?: string;
   photos?: string[];
   receipt?: string;
+  refundPending: boolean;
 }
 
 export interface ScheduleDay { key: string; label: string; working: boolean; slots: string[]; }
@@ -45,7 +47,8 @@ interface ServerRequest {
   id: string; clientId: string; clientName: string; clientPhone: string;
   status: RequestStatus; mainId: string | null; addonIds: string[];
   date: string | null; time: string | null; wishes?: string;
-  bookingPaid: boolean; masterNote?: string; photos?: string[]; receipt?: string;
+  bookingPaid: boolean; bookingFee: number; masterNote?: string;
+  photos?: string[]; receipt?: string; refundPending?: boolean;
 }
 
 function toMasterRequest(r: ServerRequest): MasterRequest {
@@ -61,9 +64,11 @@ function toMasterRequest(r: ServerRequest): MasterRequest {
     time: r.time || '',
     wishes: r.wishes,
     bookingPaid: r.bookingPaid,
+    bookingFee: r.bookingFee ?? 500,
     masterNote: r.masterNote,
     photos: r.photos || [],
     receipt: r.receipt || '',
+    refundPending: !!r.refundPending,
   };
 }
 
@@ -87,6 +92,22 @@ export async function rejectRequest(id: string): Promise<void> {
 /** Мастер проверил чек и подтверждает оплату брони → запись подтверждена. */
 export async function confirmPayment(id: string): Promise<void> {
   await api.post(`/api/admin/requests/${id}/confirm-payment`);
+}
+
+/** Статус режима «мастер заболел». */
+export async function getSick(): Promise<boolean> {
+  const r = await api.get<{ sick: boolean }>('/api/admin/sick');
+  return !!r.sick;
+}
+
+/** Включить/выключить режим «мастер заболел». Возвращает число отменённых записей. */
+export async function setSick(sick: boolean): Promise<{ sick: boolean; cancelled: number }> {
+  return api.post<{ sick: boolean; cancelled: number }>('/api/admin/sick', { sick });
+}
+
+/** Отметить, что деньги клиенту возвращены → убрать из списка возвратов. */
+export async function markRefunded(id: string): Promise<void> {
+  await api.post(`/api/admin/requests/${id}/refunded`);
 }
 
 export async function updateRequest(

@@ -1,7 +1,8 @@
 /**
  * pages/master/MasterRequestsTab.tsx
- * Вкладка «Заявки»: статистика, заявки на рассмотрении (одобрить/изменить/отклонить/написать),
- * одобренные, редактор расписания. Состояния loading/empty/error.
+ * Вкладка «Заявки»: статистика, режим «Заболела», вкладки по статусам
+ * (На рассмотрении / Ожидают оплаты / Чек на проверке / Подтверждённые / Возврат),
+ * сортировка по дате записи (ближайшие сверху), редактор расписания.
  */
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { useAsyncData } from '../../hooks';
@@ -20,6 +21,9 @@ import {
   approveRequest,
   rejectRequest,
   confirmPayment,
+  getSick,
+  setSick,
+  markRefunded,
   serviceLabels,
   requestTotal,
   allSlots,
@@ -29,9 +33,30 @@ import {
 const fmt = (n: number) => `${n.toLocaleString('ru-RU')} ₽`;
 const prettyDate = (iso: string) => iso.split('-').reverse().join('.');
 
+/** Подтверждение действия (Telegram-диалог с фолбэком на window.confirm). */
+function confirmAction(message: string): Promise<boolean> {
+  const tg = (window as unknown as { Telegram?: { WebApp?: { showConfirm?: (m: string, cb: (ok: boolean) => void) => void } } }).Telegram?.WebApp;
+  if (tg?.showConfirm) return new Promise((resolve) => tg.showConfirm!(message, resolve));
+  return Promise.resolve(window.confirm(message));
+}
+
+type TabKey = 'pending_review' | 'payment_pending' | 'receipt_review' | 'confirmed' | 'refunds';
+const TABS: { key: TabKey; label: string }[] = [
+  { key: 'pending_review', label: 'На рассмотрении' },
+  { key: 'payment_pending', label: 'Ожидают оплаты' },
+  { key: 'receipt_review', label: 'Чек на проверке' },
+  { key: 'confirmed', label: 'Подтверждённые' },
+  { key: 'refunds', label: 'Возврат' },
+];
+
+// Сортировка по дате+времени записи — ближайшие сверху.
+const byAppointment = (a: MasterRequest, b: MasterRequest) =>
+  `${a.date} ${a.time}`.localeCompare(`${b.date} ${b.time}`);
+
 export const MasterRequestsTab: React.FC = () => {
   const notify = useNotification();
   const [reloadKey, setReloadKey] = useState(0);
+  const [tab, setTab] = useState<TabKey>('pending_review');
   const [editTarget, setEditTarget] = useState<MasterRequest | null>(null);
   const [msgTarget, setMsgTarget] = useState<MasterRequest | null>(null);
   const [msgText, setMsgText] = useState('');
@@ -39,6 +64,8 @@ export const MasterRequestsTab: React.FC = () => {
   const [chat, setChat] = useState<ChatMessage[]>([]);
   const [convs, setConvs] = useState<Conversation[]>([]);
   const [seen, setSeen] = useState<Record<string, string>>(readSeen());
+  const [sick, setSickState] = useState(false);
+  const [sickBusy, setSickBusy] = useState(false);
   const chatEndRef = useRef<HTMLDivElement>(null);
   const reload = () => setReloadKey((k) => k + 1);
 
@@ -50,6 +77,13 @@ export const MasterRequestsTab: React.FC = () => {
     const t = setInterval(load, 10000);
     return () => { active = false; clearInterval(t); };
   }, []);
+
+  // Текущий режим «мастер заболел».
+  useEffect(() => {
+    let active = true;
+    getSick().then((s) => { if (active) setSickState(s); }).catch(() => {});
+    return () => { active = false; };
+  }, [reloadKey]);
 
   // Есть ли непрочитанное сообщение от клиента.
   const isUnread = (clientId: string): boolean => {
@@ -76,10 +110,11 @@ export const MasterRequestsTab: React.FC = () => {
   const { data: stats } = useAsyncData(statsFetcher, [reloadKey]);
 
   const all = requests ?? [];
-  const pending = all.filter((r) => r.status === 'pending_review');
-  const approved = all.filter(
-    (r) => r.status === 'payment_pending' || r.status === 'receipt_review' || r.status === 'confirmed'
-  );
+  const refunds = all.filter((r) => r.refundPending).sort(byAppointment);
+  const listForTab = (key: TabKey): MasterRequest[] =>
+    key === 'refunds' ? refunds : all.filter((r) => r.status === key).sort(byAppointment);
+  const countFor = (key: TabKey) => listForTab(key).length;
+  const current = listForTab(tab);
 
   const handleApprove = async (r: MasterRequest) => {
     await approveRequest(r.id);
@@ -96,9 +131,36 @@ export const MasterRequestsTab: React.FC = () => {
     notify.success('Оплата подтверждена — запись подтверждена');
     reload();
   };
+  const handleRefunded = async (r: MasterRequest) => {
+    if (!(await confirmAction(`Вы вернули клиенту ${r.clientName} бронь ${fmt(r.bookingFee)}?`))) return;
+    await markRefunded(r.id);
+    notify.success('Отмечено как возвращённое');
+    reload();
+  };
+  const handleToggleSick = async () => {
+    const msg = sick
+      ? 'Снова открыть запись для клиентов?'
+      : 'Отметить, что мастер заболел? Все активные записи будут отменены, а запись для новых клиентов закроется.';
+    if (!(await confirmAction(msg))) return;
+    setSickBusy(true);
+    try {
+      const res = await setSick(!sick);
+      setSickState(res.sick);
+      notify.success(
+        res.sick
+          ? `Запись закрыта. Отменено записей: ${res.cancelled}. Кому вернуть деньги — во вкладке «Возврат».`
+          : 'Запись снова открыта'
+      );
+      reload();
+    } catch {
+      notify.error('Не удалось изменить статус');
+    } finally {
+      setSickBusy(false);
+    }
+  };
+
   const openMessage = (r: MasterRequest) => {
     setMsgText(''); setChat([]); setMsgTarget(r);
-    // помечаем диалог прочитанным
     const cid = String(r.clientTgId);
     const c = convs.find((x) => x.clientId === cid);
     const next = { ...seen, [cid]: c?.lastAt || new Date().toISOString() };
@@ -118,9 +180,80 @@ export const MasterRequestsTab: React.FC = () => {
     }
   };
 
+  // ── Карточка заявки (вид зависит от вкладки/статуса) ──────────────
+  const Card = ({ r }: { r: MasterRequest }) => {
+    const onReview = r.status === 'receipt_review';
+    const isRefund = tab === 'refunds';
+    return (
+      <div className={`rounded-card bg-card border p-4 mb-3 ${tab === 'pending_review' || onReview || isRefund ? 'border-l-2 border-l-brand border-line' : 'border-line'}`}>
+        <div className="flex items-center justify-between mb-1">
+          <span className="text-sm font-medium text-fg">{r.clientName}</span>
+          <span className="text-sm font-semibold text-brand">{fmt(requestTotal(r))}</span>
+        </div>
+        <p className="text-xs text-muted">
+          {prettyDate(r.date)} · {r.time} · {serviceLabels(r).join(' + ')}
+        </p>
+        {r.wishes && (
+          <p className="text-xs text-hint italic mt-0.5 break-words [overflow-wrap:anywhere] whitespace-pre-wrap">«{r.wishes}»</p>
+        )}
+        {r.photos && r.photos.length > 0 && (
+          <div className="flex gap-2 mt-2">
+            {r.photos.map((src, i) => (
+              <a key={i} href={src} target="_blank" rel="noreferrer" className="w-14 h-14 rounded-tile overflow-hidden border border-line block">
+                <img src={src} alt={`фото ${i + 1}`} className="w-full h-full object-cover" />
+              </a>
+            ))}
+          </div>
+        )}
+        <p className="text-xs text-brand-dark mt-1">{r.clientPhone}</p>
+
+        {/* Чек, присланный клиентом (на вкладке «Чек на проверке») */}
+        {onReview && r.receipt && (
+          <a href={r.receipt} target="_blank" rel="noreferrer" className="block mt-2 rounded-tile overflow-hidden border border-line">
+            <img src={r.receipt} alt="чек оплаты" className="w-full max-h-56 object-contain bg-card-2" />
+          </a>
+        )}
+
+        {/* Сумма к возврату */}
+        {isRefund && (
+          <p className="text-xs text-muted mt-1">К возврату: <span className="font-medium text-fg">{fmt(r.bookingFee)}</span></p>
+        )}
+
+        {/* Действия по статусу */}
+        <div className="mt-3 flex flex-col gap-2">
+          {tab === 'pending_review' && (
+            <>
+              <div className="flex gap-2">
+                <Button variant="secondary" size="sm" onClick={() => setEditTarget(r)} className="flex-1">Изменить</Button>
+                <Button variant="ghost" size="sm" onClick={() => handleReject(r)} className="flex-1">Отклонить</Button>
+              </div>
+              <Button variant="primary" size="sm" fullWidth onClick={() => handleApprove(r)}>
+                Одобрить и отправить на оплату
+              </Button>
+            </>
+          )}
+          {onReview && (
+            <Button variant="primary" size="sm" fullWidth onClick={() => handleConfirmPayment(r)}>
+              Подтвердить оплату
+            </Button>
+          )}
+          {isRefund && (
+            <Button variant="primary" size="sm" fullWidth onClick={() => handleRefunded(r)}>
+              Деньги возвращены
+            </Button>
+          )}
+          <Button variant="secondary" size="sm" fullWidth className="relative" onClick={() => openMessage(r)}>
+            Написать клиенту
+            {isUnread(String(r.clientTgId)) && <span className="absolute top-1.5 right-2 w-2 h-2 rounded-full bg-red-500" />}
+          </Button>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="flex-1 overflow-y-auto px-6 py-5">
-      <div className="grid grid-cols-3 gap-2 mb-5">
+      <div className="grid grid-cols-3 gap-2 mb-4">
         {[
           { l: 'Записей', v: stats ? String(stats.today) : '—' },
           { l: 'Новых заявок', v: stats ? String(stats.pending) : '—' },
@@ -133,7 +266,41 @@ export const MasterRequestsTab: React.FC = () => {
         ))}
       </div>
 
-      <p className="text-[11px] uppercase tracking-wider text-muted mb-2">Заявки на рассмотрении</p>
+      {/* Режим «Заболела» */}
+      {sick && (
+        <div className="rounded-card border border-red-500/60 bg-red-500/10 px-4 py-2.5 mb-3 text-xs text-red-500">
+          Запись закрыта — мастер заболел. Новые клиенты записаться не могут.
+        </div>
+      )}
+      <Button
+        variant={sick ? 'primary' : 'ghost'}
+        size="sm"
+        fullWidth
+        isLoading={sickBusy}
+        onClick={handleToggleSick}
+        className="mb-4"
+      >
+        {sick ? 'Открыть запись (выздоровела)' : '😷 Заболела — закрыть запись'}
+      </Button>
+
+      {/* Вкладки по статусам */}
+      <div className="flex gap-1.5 overflow-x-auto pb-2 mb-3 -mx-1 px-1">
+        {TABS.map((t) => {
+          const active = tab === t.key;
+          const n = countFor(t.key);
+          return (
+            <button
+              key={t.key}
+              onClick={() => setTab(t.key)}
+              className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-medium border transition-colors ${
+                active ? 'bg-brand text-[color:rgb(var(--brand-contrast))] border-brand' : 'bg-card text-muted border-line'
+              }`}
+            >
+              {t.label}{n > 0 && <span className={`ml-1 ${active ? '' : 'text-brand'}`}>{n}</span>}
+            </button>
+          );
+        })}
+      </div>
 
       {isLoading && (
         <div className="rounded-card bg-card border border-line p-4 animate-pulse mb-3">
@@ -147,107 +314,13 @@ export const MasterRequestsTab: React.FC = () => {
           <Button variant="secondary" onClick={reload}>Повторить</Button>
         </div>
       )}
-      {!isLoading && !error && pending.length === 0 && (
-        <p className="text-xs text-hint mb-3">Новых заявок нет.</p>
+      {!isLoading && !error && current.length === 0 && (
+        <p className="text-xs text-hint mb-3">
+          {tab === 'refunds' ? 'Возвратов нет.' : 'Здесь пока пусто.'}
+        </p>
       )}
 
-      {pending.map((r) => (
-        <div key={r.id} className="rounded-card bg-card border border-line border-l-2 border-l-brand p-4 mb-3">
-          <div className="flex items-center justify-between mb-1">
-            <span className="text-sm font-medium text-fg">{r.clientName}</span>
-            <span className="text-[11px] font-medium px-2 py-0.5 rounded-full text-brand bg-brand/10">
-              На рассмотрении
-            </span>
-          </div>
-          <p className="text-xs text-muted">
-            {prettyDate(r.date)} · {r.time} · {serviceLabels(r).join(' + ')}
-          </p>
-          {r.wishes && <p className="text-xs text-hint italic mt-0.5 break-words [overflow-wrap:anywhere] whitespace-pre-wrap">«{r.wishes}»</p>}
-          {r.photos && r.photos.length > 0 && (
-            <div className="flex gap-2 mt-2">
-              {r.photos.map((src, i) => (
-                <a key={i} href={src} target="_blank" rel="noreferrer" className="w-14 h-14 rounded-tile overflow-hidden border border-line block">
-                  <img src={src} alt={`фото ${i + 1}`} className="w-full h-full object-cover" />
-                </a>
-              ))}
-            </div>
-          )}
-          <p className="text-xs text-brand-dark mt-1">{r.clientPhone}</p>
-          <p className="text-xs text-muted mt-0.5 mb-3">Итого: {fmt(requestTotal(r))} · бронь не оплачена</p>
-
-          <div className="flex gap-2 mb-2">
-            <Button variant="secondary" size="sm" onClick={() => setEditTarget(r)} className="flex-1">Изменить</Button>
-            <Button variant="ghost" size="sm" onClick={() => handleReject(r)} className="flex-1">Отклонить</Button>
-            <Button variant="secondary" size="sm" onClick={() => openMessage(r)} className="flex-1 relative">
-              Написать
-              {isUnread(String(r.clientTgId)) && <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-red-500" />}
-            </Button>
-          </div>
-          <Button variant="primary" size="sm" fullWidth onClick={() => handleApprove(r)}>
-            Одобрить и отправить на оплату
-          </Button>
-        </div>
-      ))}
-
-      <p className="text-[11px] uppercase tracking-wider text-muted mb-2 mt-2">Одобренные</p>
-      {approved.length === 0 && <p className="text-xs text-hint mb-3">Пока нет.</p>}
-      {approved.map((r) => {
-        const onReview = r.status === 'receipt_review';
-        const badge = r.bookingPaid
-          ? '✓ Бронь оплачена'
-          : onReview
-          ? '🧾 Чек на проверке'
-          : 'Ожидает оплаты';
-        return (
-          <div
-            key={r.id}
-            className={`rounded-card bg-card border p-3 mb-2 ${onReview ? 'border-l-2 border-l-brand border-line' : 'border-line'}`}
-          >
-            <div className="flex items-center justify-between">
-              <span className="text-sm font-medium text-fg">{r.clientName}</span>
-              <span className="text-[11px] font-medium px-2 py-0.5 rounded-full text-brand-dark bg-brand/15">
-                {badge}
-              </span>
-            </div>
-            <p className="text-xs text-muted mt-0.5">
-              {prettyDate(r.date)} · {r.time} · {serviceLabels(r).join(' + ')}
-            </p>
-            <div className="flex items-center justify-between mt-2">
-              <span className="text-xs text-muted">{r.bookingPaid ? 'Заработано за услугу' : 'К оплате'}</span>
-              <span className="text-sm font-semibold text-brand">{fmt(requestTotal(r))}</span>
-            </div>
-
-            {/* Чек, присланный клиентом */}
-            {onReview && r.receipt && (
-              <a
-                href={r.receipt}
-                target="_blank"
-                rel="noreferrer"
-                className="block mt-2 rounded-tile overflow-hidden border border-line"
-              >
-                <img src={r.receipt} alt="чек оплаты" className="w-full max-h-56 object-contain bg-card-2" />
-              </a>
-            )}
-
-            {onReview && (
-              <Button
-                variant="primary"
-                size="sm"
-                fullWidth
-                className="mt-2"
-                onClick={() => handleConfirmPayment(r)}
-              >
-                Подтвердить оплату
-              </Button>
-            )}
-
-            <Button variant="secondary" size="sm" fullWidth className="mt-2 relative" onClick={() => openMessage(r)}>
-              Написать клиенту
-              {isUnread(String(r.clientTgId)) && <span className="absolute top-1.5 right-2 w-2 h-2 rounded-full bg-red-500" />}
-            </Button>
-          </div>
-        );
-      })}
+      {!isLoading && !error && current.map((r) => <Card key={r.id} r={r} />)}
 
       <p className="text-[11px] uppercase tracking-wider text-muted mb-2 mt-4">Расписание по дням</p>
       <MasterScheduleEditor />
@@ -276,7 +349,6 @@ export const MasterRequestsTab: React.FC = () => {
             style={{ height: '80vh' }}
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Шапка */}
             <div className="flex items-center justify-between px-5 py-3 border-b border-line">
               <div>
                 <h2 className="font-serif text-base text-fg leading-tight">{msgTarget.clientName}</h2>
@@ -285,7 +357,6 @@ export const MasterRequestsTab: React.FC = () => {
               <button onClick={() => setMsgTarget(null)} className="text-brand text-xl leading-none">✕</button>
             </div>
 
-            {/* Лента */}
             <div className="flex-1 overflow-y-auto px-4 py-3 flex flex-col gap-2">
               {chat.length === 0 && (
                 <p className="text-xs text-hint text-center mt-6">Переписки пока нет. Напишите первым.</p>
@@ -310,7 +381,6 @@ export const MasterRequestsTab: React.FC = () => {
               <div ref={chatEndRef} />
             </div>
 
-            {/* Ввод */}
             <div className="flex items-end gap-2 px-4 py-3 border-t border-line">
               <textarea
                 rows={1}

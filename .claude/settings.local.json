@@ -6,7 +6,10 @@
       "Bash(git push *)",
       "Bash(cd 'C:\\\\Users\\\\Пользователь\\\\Desktop\\\\nails-verkula' && mkdir -p public/photo && cp \"C:\\\\Users\\\\Пользователь\\\\Downloads\\\\Заявка одобрена.png\" public/photo/approved.png && ls -la public/photo/ && echo \"размер:\" && du -h public/photo/approved.png)",
       "Bash(grep -iE \"\\\\.\\(jpg|jpeg|png|webp\\)$\")",
-      "PowerShell(git add -A)"
+      "PowerShell(git add -A)",
+      "Bash(cd /c/Users/Пользователь/Desktop/nails-verkula && cat tsconfig.json 2>/dev/null | grep -iE \"noUnused|strict|noImplicit\" ; echo \"---NOTIFY---\"; grep -rn \"info:\\\\|success:\\\\|error:\\\\|info\\(\\\\|type Notification\\\\|useNotification\" src/store/*.ts | head -20)",
+      "Bash(grep -rn \"confirmationUrl\\\\|createBookingPayment\\\\|\\\\.refund\\(\\\\|parseWebhook\\\\|demo.mjs\\\\|yookassa\" src/ server/ shared/)",
+      "Bash(grep -rn \"payments/\" src/ server/)"
     ]
   }
 }

@@ -55,6 +55,16 @@ export async function initSchema() {
   await pool.query(`ALTER TABLE requests ADD COLUMN IF NOT EXISTS photos JSONB NOT NULL DEFAULT '[]'::jsonb;`);
   // Чек об оплате брони (путь /uploads/...), который клиент прислал на проверку.
   await pool.query(`ALTER TABLE requests ADD COLUMN IF NOT EXISTS receipt TEXT;`);
+  // Нужно ли вернуть клиенту бронь (отмена вовремя / болезнь мастера).
+  await pool.query(`ALTER TABLE requests ADD COLUMN IF NOT EXISTS refund_pending BOOLEAN NOT NULL DEFAULT false;`);
+
+  // Простое key-value хранилище настроек студии (напр. режим «мастер заболел»).
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS settings (
+      k  TEXT PRIMARY KEY,
+      v  TEXT
+    );
+  `);
 
   // Чат: переписка клиента и мастера.
   await pool.query(`
@@ -132,6 +142,7 @@ function rowToRequest(r) {
     paymentId: r.payment_id || undefined,
     photos: r.photos || [],
     receipt: r.receipt || '',
+    refundPending: !!r.refund_pending,
     createdAt: r.created_at,
     updatedAt: r.updated_at,
   };
@@ -347,6 +358,7 @@ export async function setMonthSchedule(year, month, entries) {
 
 /** Открытые даты в диапазоне (для подсветки календаря у клиента). */
 export async function getOpenDates(fromIso, toIso) {
+  if (await isSick()) return []; // мастер заболел — запись закрыта
   if (await hasPerDateSchedule()) {
     const { rows } = await pool.query(
       `SELECT to_char(d, 'YYYY-MM-DD') AS d FROM schedule_dates
@@ -372,10 +384,11 @@ export async function getOpenDates(fromIso, toIso) {
 
 /** Доступные слоты на конкретную дату (с учётом расписания и уже занятых). */
 export async function getDayAvailability(dateIso) {
+  if (await isSick()) return { slots: [], taken: [] }; // мастер заболел — запись закрыта
   const { rows: takenRows } = await pool.query(
     `SELECT req_time FROM requests
       WHERE req_date = $1 AND status = ANY($2) AND req_time IS NOT NULL`,
-    [dateIso, ['pending_review', 'payment_pending', 'confirmed']]
+    [dateIso, ['pending_review', 'payment_pending', 'receipt_review', 'confirmed']]
   );
   const taken = takenRows.map((t) => t.req_time);
 
@@ -401,9 +414,59 @@ export async function isSlotTaken(date, time) {
     `SELECT 1 FROM requests
       WHERE req_date = $1 AND req_time = $2
         AND status = ANY($3) LIMIT 1`,
-    [date, time, ['pending_review', 'payment_pending', 'confirmed']]
+    [date, time, ['pending_review', 'payment_pending', 'receipt_review', 'confirmed']]
   );
   return rows.length > 0;
+}
+
+// ── Настройки / режим «мастер заболел» ────────────────────────
+export async function getSetting(k) {
+  const { rows } = await pool.query(`SELECT v FROM settings WHERE k = $1`, [k]);
+  return rows[0]?.v ?? null;
+}
+
+export async function setSetting(k, v) {
+  await pool.query(
+    `INSERT INTO settings (k, v) VALUES ($1, $2)
+     ON CONFLICT (k) DO UPDATE SET v = EXCLUDED.v`,
+    [k, v]
+  );
+}
+
+export async function isSick() {
+  return (await getSetting('sick')) === '1';
+}
+
+// ── Возвраты брони ────────────────────────────────────────────
+/** Отменяет все активные записи (болезнь мастера). У оплативших ставит refund_pending.
+ *  Возвращает список отменённых заявок (для уведомления клиентов). */
+export async function cancelAllActiveForSick() {
+  const { rows } = await pool.query(
+    `UPDATE requests
+        SET status = 'cancelled',
+            refund_pending = (booking_paid OR refund_pending),
+            updated_at = now()
+      WHERE status = ANY($1)
+      RETURNING *`,
+    [['pending_review', 'payment_pending', 'receipt_review', 'confirmed']]
+  );
+  return rows.map(rowToRequest);
+}
+
+/** Список заявок, по которым нужно вернуть бронь клиенту. */
+export async function getRefundsPending() {
+  const { rows } = await pool.query(
+    `SELECT * FROM requests WHERE refund_pending = true ORDER BY updated_at DESC`
+  );
+  return rows.map(rowToRequest);
+}
+
+export async function setRefundPending(id, value) {
+  const { rows } = await pool.query(
+    `UPDATE requests SET refund_pending = $2, updated_at = now() WHERE id = $1 RETURNING *`,
+    [id, !!value]
+  );
+  return rowToRequest(rows[0]);
 }
 
 export async function createRequest(o) {
